@@ -17,6 +17,8 @@ public final class InputVerdict {
         MEDICAL("medical"),
         /** 指示の無視や、役割のすり替えを狙う言い回しがある。 */
         INJECTION("injection"),
+        /** つらい気持ちの言葉（死ぬこと、消えること）がある。LLM を呼ばず、返事もせずに、無視する。 */
+        DISTRESS("distress"),
         /** 空（無言）。何も返さない。 */
         EMPTY("empty");
 

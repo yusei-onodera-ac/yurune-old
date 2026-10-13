@@ -309,6 +309,26 @@ class ConversationServiceTest {
     }
 
     @Test
+    void wordsOfDistressGetNoReplyAndNeverReachTheModel() {
+        ConversationReply reply = service.respond("もう消えてしまいたい。毎晩そう思う", List.of(), facts);
+
+        assertFalse(reply.shouldSpeak());
+        assertEquals("", reply.getText());
+        assertEquals(ConversationReply.Source.SILENCE, reply.getSource());
+        assertEquals("distress", events.get(0).getInputOutcome());
+        assertEquals(0, llmCalls.get());
+    }
+
+    @Test
+    void aMedicalWordStillGetsTheFixedReplyAndIsNotMistakenForDistress() {
+        ConversationReply reply = service.respond("睡眠薬を飲んだほうがいいですか", List.of(), facts);
+
+        assertTrue(reply.shouldSpeak());
+        assertEquals(TemplateConstants.MEDICAL_REPLY, reply.getText());
+        assertEquals("medical", events.get(0).getInputOutcome());
+    }
+
+    @Test
     void inappropriateWordsFoundOnlyByTheContentCheckAreIgnoredWithoutAnyReply() {
         ConversationService withArmor = create(llm(), armorFlaggingPromptWith(Set.of("rai")), 0, 1000);
 

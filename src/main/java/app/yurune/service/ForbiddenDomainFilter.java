@@ -39,8 +39,19 @@ public final class ForbiddenDomainFilter {
         return findViolation(text).isPresent();
     }
 
+    /** 利用者の発言に、つらい気持ちの言葉（死ぬこと、消えること）が入っているか。 */
+    public boolean containsDistressTerm(String text) {
+        String target = TextNormalizer.normalizeForMatching(text);
+        for (String term : ForbiddenTermConstants.DISTRESS_INPUT_TERMS) {
+            if (target.contains(term)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
-     * 利用者の発言に、医療領域（病名、薬、受診、つらさの訴えなど）の語が入っているか。
+     * 利用者の発言に、医療領域（病名、薬、受診など）の語が入っているか。
      * 語を、文字として含むだけの日常の言葉（憂うつ、うつ伏せなど）は、先に取り除いてから照合する。
      */
     public boolean containsMedicalTopic(String text) {

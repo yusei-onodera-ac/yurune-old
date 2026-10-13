@@ -106,6 +106,7 @@ public final class ConversationService {
     private Result decide(InputVerdict input, List<ChatTurn> history, FactSheet facts) {
         return switch (input.getOutcome()) {
             case EMPTY -> new Result(ConversationReply.silence(), null);
+            case DISTRESS -> new Result(ConversationReply.silence(), null);
             case MEDICAL -> new Result(
                     ConversationReply.of(TemplateConstants.MEDICAL_REPLY, ConversationReply.Source.MEDICAL_TEMPLATE), null);
             case INJECTION -> new Result(

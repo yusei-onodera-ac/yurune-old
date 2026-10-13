@@ -12,7 +12,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File deploy\deploy.ps1 -ProjectId
 
 ## 前提
 
-- Google Cloud のプロジェクトと、課金の設定。予算アラートは、クレジットを引く前の金額で数える設定にします。
+- Google Cloud のプロジェクトと、課金の設定。予算アラートは、クレジットを引く前の金額で数える設定にします（`apply-budget.ps1` がそうします）。予算は、知らせるだけで、使うのを止めません。
 - gcloud を入れて、`gcloud auth login` を済ませておく。
 - Firebase を、同じプロジェクトに追加する。Authentication で「メール / パスワード」を有効にします。
 - Gemini API のキーと、Firebase の Web API キー。
@@ -37,6 +37,9 @@ $env:YURUNE_DEMO_PASSWORD = '<パスワード>'
 
 # 方針どおりに設定されているかの確認
 .\deploy\verify.ps1 -ProjectId <プロジェクト ID>
+
+# 予算アラート（月 10,000 円は仮置き）。知らせる先は、監視の通知先（-NotificationEmail）と、請求先アカウントの管理者
+.\deploy\apply-budget.ps1 -BillingAccountId <請求先アカウント ID> -ProjectId <プロジェクト ID> -AmountJpy 10000
 
 # 監視（メトリクス、/ready のアップタイムの確認、アラート、ダッシュボード）。何度実行しても、重複はできない。
 # -NotificationEmail は、アラートを知らせるメールアドレス（リポジトリには書かない）

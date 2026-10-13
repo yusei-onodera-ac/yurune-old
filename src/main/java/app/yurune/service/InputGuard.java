@@ -6,8 +6,8 @@ import java.util.Map;
 
 /**
  * 利用者の発言を、LLM に渡す前に検査する固定の枠。発言は命令ではなく、信頼しないデータとして扱う。
- * 順番: 正規化 → 長さを切る → 個人情報の伏せ字 → インジェクション → 医療領域。
- * 医療領域とインジェクションは、LLM を呼ばず、コードの定型文で応じる。
+ * 順番: 正規化 → 長さを切る → 個人情報の伏せ字 → インジェクション → つらい気持ちの言葉 → 医療領域。
+ * 医療領域とインジェクションは、LLM を呼ばず、コードの定型文で応じる。つらい気持ちの言葉は、LLM を呼ばず、返事もしない。
  */
 public final class InputGuard {
 
@@ -38,6 +38,9 @@ public final class InputGuard {
     private InputVerdict.Outcome decideOutcome(String maskedText) {
         if (injectionDetector.isInjection(maskedText)) {
             return InputVerdict.Outcome.INJECTION;
+        }
+        if (forbiddenDomainFilter.containsDistressTerm(maskedText)) {
+            return InputVerdict.Outcome.DISTRESS;
         }
         if (forbiddenDomainFilter.containsMedicalTopic(maskedText)) {
             return InputVerdict.Outcome.MEDICAL;
