@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ゆるね</title>
+</head>
+<body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap">
+<style>
+/* Layout concept: one night-to-morning scroll. A dark opener and closer frame the light sections, so the page falls asleep and wakes up. */
+:root {
+  --font-display: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Noto Sans JP", sans-serif;
+  --font-body: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+
+  --color-page: #F2F4F4;
+  --color-surface: #FFFFFF;
+  --color-ink: #1D2326;
+  --color-ink-soft: #55646B;
+  --color-accent: #2E8C87;
+  --color-accent-strong: #1F6F6A;
+  --color-accent-soft: #DDEFED;
+  --color-line: #D5DDDE;
+  --color-button-bg: #247A75;
+  --color-button-text: #FFFFFF;
+  --color-shadow: rgba(10, 14, 17, 0.28);
+
+  --color-night: #0A0E11;
+  --color-night-raised: #10181C;
+  --color-night-ink: #D3DCE1;
+  --color-night-dim: #93A1A9;
+  --color-night-accent: #4BB3AC;
+  --color-night-button-text: #06201E;
+  --color-cheek: #F0A9B6;
+
+  --text-small: 0.875rem;
+  --text-body: 1rem;
+  --text-lead: clamp(1.0625rem, 2.4vw, 1.25rem);
+  --text-sub: clamp(1.25rem, 2.6vw, 1.5rem);
+  --text-section: clamp(1.75rem, 4.6vw, 2.75rem);
+  --text-hero: clamp(2.875rem, 10vw, 5.75rem);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+  --space-section: clamp(3.5rem, 9vw, 7rem);
+
+  --radius-screen: 2rem;
+  --radius-button: 0.75rem;
+  --measure-text: 34em;
+  --width-page: 70rem;
+  --width-phone: 17rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-page: #12171B;
+    --color-surface: #1B2227;
+    --color-ink: #E6EBEE;
+    --color-ink-soft: #A3AFB6;
+    --color-accent: #4BB3AC;
+    --color-accent-strong: #6CC8C1;
+    --color-accent-soft: #1D3836;
+    --color-line: #2A333A;
+    --color-button-bg: #4BB3AC;
+    --color-button-text: #06201E;
+    --color-shadow: rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --color-page: #12171B;
+  --color-surface: #1B2227;
+  --color-ink: #E6EBEE;
+  --color-ink-soft: #A3AFB6;
+  --color-accent: #4BB3AC;
+  --color-accent-strong: #6CC8C1;
+  --color-accent-soft: #1D3836;
+  --color-line: #2A333A;
+  --color-button-bg: #4BB3AC;
+  --color-button-text: #06201E;
+  --color-shadow: rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+.sprite { position: absolute; }
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+body {
+  margin: 0;
+  background: var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: 1.9;
+  line-break: strict;
+  word-break: auto-phrase;
+  overflow-wrap: anywhere;
+}
+.landing { overflow-x: clip; }
+:where(.landing) a { color: inherit; }
+:where(.landing) a:focus-visible,
+:where(.landing) summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; border-radius: 4px; }
+:where(.landing) :is(p, ul, ol, dl, figure, h1, h2, h3, dd) { margin: 0; }
+:where(.landing) :is(ul, ol) { padding: 0; list-style: none; }
+
+.wrap { width: 100%; max-width: var(--width-page); margin-inline: auto; padding-inline: max(1rem, 4vw); }
+.band { padding-block: var(--section-space, var(--space-section)); }
+.eyebrow { font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.14em; color: var(--color-accent-strong); }
+.heading-section { font-family: var(--font-display); font-size: var(--text-section); font-weight: 700; line-height: 1.45; text-wrap: balance; font-feature-settings: "palt" 1; }
+.lead { font-size: var(--text-lead); max-width: var(--measure-text); }
+.copy { max-width: var(--measure-text); color: var(--color-ink); }
+.copy-soft { max-width: var(--measure-text); color: var(--color-ink-soft); font-size: var(--text-small); }
+.stack-text { display: flex; flex-direction: column; gap: var(--space-5); }
+.stack-text--tight { gap: var(--space-3); }
+.heading-block { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-5); }
+.stack-text .heading-block { margin-bottom: 0; }
+.note-spaced { margin-top: var(--space-7); }
+
+/* Header: stays dark on every section so the wordmark never changes ground. */
+.site-header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; background: var(--color-night); color: var(--color-night-ink); }
+.site-header__inner { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); min-height: 3.5rem; }
+.wordmark { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; text-decoration: none; letter-spacing: 0.06em; }
+.pot { display: block; flex: none; }
+.pot--small { width: 2rem; height: auto; }
+.site-nav { display: flex; gap: var(--space-5); font-size: var(--text-small); }
+.site-nav a { text-decoration: none; color: var(--color-night-dim); padding-block: var(--space-2); }
+.site-nav a:hover { color: var(--color-night-ink); }
+@media (max-width: 40rem) { .site-nav a:not(:last-child) { display: none; } }
+
+/* Hero */
+.hero { background: var(--color-night); color: var(--color-night-ink); --section-space: clamp(3rem, 9vw, 7rem); }
+.hero__grid { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: var(--space-7); align-items: center; }
+.hero__title { font-family: var(--font-display); font-size: var(--text-hero); font-weight: 700; line-height: 1.2; letter-spacing: 0.04em; margin-block: var(--space-4) var(--space-6); font-feature-settings: "palt" 1; }
+.hero__title span { display: block; }
+.hero__lead { font-size: var(--text-lead); max-width: 30em; color: var(--color-night-ink); }
+.hero__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-block: var(--space-6) var(--space-5); }
+.hero__legal { font-size: var(--text-small); color: var(--color-night-dim); max-width: 32em; }
+.hero__visual { position: relative; display: grid; place-items: center; width: 100%; max-width: 30rem; aspect-ratio: 1; justify-self: center; }
+.hero__visual::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--color-night-raised); }
+.hero__pot { position: relative; width: 82%; height: auto; }
+.hero__zz { fill: var(--color-night-dim); font-family: var(--font-display); font-weight: 700; }
+.hero__zz--small { font-size: 7px; }
+.hero__zz--medium { font-size: 9px; }
+.hero__zz--large { font-size: 12px; }
+.eyebrow--night { color: var(--color-night-accent); }
+@media (max-width: 56rem) { .hero__grid { grid-template-columns: minmax(0, 1fr); } .hero__visual { order: 2; } }
+
+.button { display: inline-flex; align-items: center; justify-content: center; min-height: 3rem; padding-inline: var(--space-6); border-radius: var(--radius-button); font-weight: 700; text-decoration: none; }
+.button--primary { background: var(--color-night-accent); color: var(--color-night-button-text); }
+.button--quiet { box-shadow: inset 0 0 0 1px var(--color-night-dim); color: var(--color-night-ink); }
+.button:hover { filter: brightness(1.08); }
+
+/* Phone screens: real screens of the app, framed only by a soft edge. */
+.screen__frame { border-radius: var(--radius-screen); overflow: hidden; background: var(--color-surface); box-shadow: 0 0 0 1px var(--color-line), 0 1.5rem 3rem -1.5rem var(--color-shadow); }
+.screen__image { display: block; width: 100%; height: auto; aspect-ratio: 390 / 844; }
+.screen__caption { margin-top: var(--space-3); font-size: 0.8125rem; line-height: 1.6; color: var(--color-ink-soft); text-align: center; }
+.band--surface { background: var(--color-surface); }
+.lead--spaced { margin-top: var(--space-5); }
+.stack-text--spaced { margin-top: var(--space-7); }
+.safety-group__title--flush { margin-bottom: 0; }
+.phones { display: flex; justify-content: center; gap: var(--space-5); }
+.phones .screen { width: min(46%, var(--width-phone)); }
+.phones .screen:nth-child(2) { margin-top: var(--space-8); }
+@media (max-width: 40rem) { .phones { gap: var(--space-3); } .phones .screen:nth-child(2) { margin-top: var(--space-6); } }
+
+/* Feature rows alternate the side of the screens, so the page does not read as a stack of equal blocks. */
+.feature { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: var(--space-8); align-items: center; }
+.feature--reverse .feature__text { order: 2; }
+@media (max-width: 56rem) { .feature { grid-template-columns: minmax(0, 1fr); gap: var(--space-7); } .feature--reverse .feature__text { order: 0; } }
+.feature__point { display: flex; flex-direction: column; gap: var(--space-2); }
+.feature__point-title { font-family: var(--font-display); font-size: 1.125rem; font-weight: 700; color: var(--color-accent-strong); }
+
+/* Opening statements: large, staggered, spoken. */
+.statements { display: flex; flex-direction: column; gap: var(--space-5); margin-block: var(--space-7); }
+.statement { font-family: var(--font-display); font-size: var(--text-sub); font-weight: 500; line-height: 1.7; max-width: 22em; }
+.statement:nth-child(2) { margin-left: min(12vw, 6rem); }
+.statement:nth-child(3) { margin-left: min(24vw, 12rem); }
+.statement-closing { font-size: var(--text-lead); color: var(--color-accent-strong); font-weight: 500; max-width: 24em; }
+@media (max-width: 40rem) { .statement:nth-child(n) { margin-left: 0; } }
+
+/* Loop of the agent */
+.steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-5); counter-reset: step; margin-block: var(--space-8) var(--space-3); }
+.step { counter-increment: step; display: flex; flex-direction: column; gap: var(--space-2); }
+.step::before { content: counter(step); display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: 50%; background: var(--color-accent-soft); color: var(--color-accent-strong); font-weight: 700; font-variant-numeric: tabular-nums; }
+.step__title { font-family: var(--font-display); font-size: 1.125rem; font-weight: 700; }
+.step__text { font-size: var(--text-small); line-height: 1.8; color: var(--color-ink-soft); }
+@media (max-width: 64rem) { .steps { grid-template-columns: minmax(0, 1fr); } .step { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr); column-gap: var(--space-4); } .step::before { grid-row: span 2; } }
+.loop-return { display: block; width: 100%; height: 2.25rem; color: var(--color-accent); }
+.loop-return-note { font-size: 0.8125rem; color: var(--color-ink-soft); text-align: right; margin-bottom: var(--space-7); }
+.timeline { display: flex; flex-direction: column; gap: var(--space-3); margin-block: var(--space-5); }
+.night-dots { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.night-dot { width: 0.875rem; height: 0.875rem; border-radius: 50%; background: var(--color-accent); }
+.night-dot--changed { background: transparent; box-shadow: inset 0 0 0 2px var(--color-accent); }
+.night-dot--gap { margin-left: var(--space-4); }
+.legend { display: flex; flex-wrap: wrap; gap: var(--space-5); font-size: 0.8125rem; color: var(--color-ink-soft); }
+.legend__item { display: inline-flex; align-items: center; gap: var(--space-2); }
+
+/* Promises of "yururi" */
+.promises { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: var(--space-8); align-items: start; }
+@media (max-width: 56rem) { .promises { grid-template-columns: minmax(0, 1fr); gap: var(--space-6); } }
+.promise-list { display: flex; flex-direction: column; gap: var(--space-6); }
+.promise { display: grid; grid-template-columns: minmax(7.5em, 11em) minmax(0, 1fr); gap: var(--space-1) var(--space-5); }
+.promise__term { font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; color: var(--color-accent-strong); line-height: 1.6; }
+.promise__text { color: var(--color-ink); }
+@media (max-width: 40rem) { .promise { grid-template-columns: minmax(0, 1fr); } }
+
+/* Safety: a quiet tinted band. */
+.band--tint { background: var(--color-accent-soft); }
+.safety-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-7) var(--space-8); margin-top: var(--space-7); }
+@media (max-width: 48rem) { .safety-groups { grid-template-columns: minmax(0, 1fr); } }
+.safety-group__title { font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; margin-bottom: var(--space-4); }
+.checks { display: flex; flex-direction: column; gap: var(--space-4); }
+.checks li { position: relative; padding-left: 1.5rem; line-height: 1.8; }
+.checks li::before { content: ""; position: absolute; left: 0.2rem; top: 0.8em; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--color-accent); }
+.checks__lead { font-weight: 700; }
+.cloud-list { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-2) var(--space-5); font-size: var(--text-small); }
+.cloud-list dt { font-weight: 700; }
+.cloud-list dd { color: var(--color-ink-soft); }
+
+/* Limits and the fixed medical wording. */
+.limits { display: flex; flex-direction: column; gap: var(--space-3); margin-block: var(--space-5) var(--space-6); font-size: var(--text-lead); }
+.pot-says { display: grid; grid-template-columns: 4rem minmax(0, 1fr); gap: var(--space-4); align-items: center; max-width: 40rem; padding: var(--space-5); border-radius: var(--radius-screen); background: var(--color-surface); }
+.pot-says .pot { width: 4rem; height: auto; }
+
+/* FAQ */
+.faq { display: flex; flex-direction: column; gap: var(--space-2); max-width: 46rem; margin-top: var(--space-6); }
+.faq-item { background: var(--color-surface); border-radius: var(--radius-button); }
+.faq-item summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-5); font-weight: 500; }
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after { content: "+"; flex: none; color: var(--color-accent-strong); font-weight: 700; }
+.faq-item[open] summary::after { content: "−"; }
+.faq-item__answer { padding: 0 var(--space-5) var(--space-5); color: var(--color-ink-soft); }
+
+/* Footer */
+.site-footer { background: var(--color-night); color: var(--color-night-ink); padding-block: var(--space-8); }
+.site-footer__grid { display: flex; flex-direction: column; gap: var(--space-4); }
+.site-footer__legal { font-size: var(--text-small); color: var(--color-night-ink); }
+.site-footer__note { font-size: 0.8125rem; color: var(--color-night-dim); }
+</style>
+
+<svg class="sprite" width="0" height="0" aria-hidden="true" focusable="false">
+  <symbol id="pot" viewBox="0 0 100 92">
+    <ellipse cx="11" cy="68" rx="5.5" ry="7" fill="#FFFFFF" stroke="#AEBBB6" stroke-width="2"/>
+    <ellipse cx="89" cy="68" rx="5.5" ry="7" fill="#FFFFFF" stroke="#AEBBB6" stroke-width="2"/>
+    <path d="M12 52C10 28 28 10 50 10s40 18 38 42c-2 20-17 32-38 32S14 72 12 52z" fill="#FFFFFF" stroke="#AEBBB6" stroke-width="2"/>
+    <path d="M33 17q17-6 34 0" fill="none" stroke="#AEBBB6" stroke-width="1.8" stroke-dasharray="3 3" stroke-linecap="round"/>
+    <path d="M32 50q5 5 10 0M58 50q5 5 10 0" fill="none" stroke="#2B3A3A" stroke-width="2.4" stroke-linecap="round"/>
+    <ellipse cx="27" cy="61" rx="6.5" ry="3.8" fill="#F0A9B6" opacity="0.8"/>
+    <ellipse cx="73" cy="61" rx="6.5" ry="3.8" fill="#F0A9B6" opacity="0.8"/>
+    <ellipse cx="50" cy="59" rx="3.2" ry="1.4" fill="#2B3A3A"/>
+  </symbol>
+</svg>
+
+<div class="landing" lang="ja">
+
+<header class="site-header">
+  <div class="wrap site-header__inner">
+    <a class="wordmark" href="#top" aria-label="ゆるね ページの先頭へ">
+      <svg class="pot pot--small" viewBox="0 0 100 92" aria-hidden="true"><use href="#pot"/></svg>
+      ゆるね
+    </a>
+    <nav class="site-nav" aria-label="ページ内の案内">
+      <a href="#night">夜</a>
+      <a href="#loop">しくみ</a>
+      <a href="#yururi">ゆるりの約束</a>
+      <a href="#safety">安心のこと</a>
+      <a href="#faq">よくある質問</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+<section class="hero band" aria-labelledby="hero-title">
+  <div class="wrap hero__grid">
+    <div>
+      <p class="eyebrow eyebrow--night">睡眠サポート　スマートフォンのブラウザで</p>
+      <h1 class="hero__title" id="hero-title"><span>ゆるりと、</span><span>ねむる。</span></h1>
+      <p class="hero__lead">寝つきが悪い、眠りが浅いと感じる夜に。ぽてねが、雨や波の音といっしょに、そばにいます。夜のすごし方は、あなたの記録だけを見ながら、ゆっくり見つけていきます。</p>
+      <div class="hero__actions">
+        <a class="button button--primary" href="#night">夜のようすを見る</a>
+        <a class="button button--quiet" href="#loop">しくみを見る</a>
+      </div>
+      <p class="hero__legal">つらさが続くときは、医師に相談してください。ゆるねは医療機器ではありません。</p>
+    </div>
+    <div class="hero__visual" role="img" aria-label="目を閉じて眠っている、ぽてね。">
+      <svg class="hero__pot" viewBox="0 0 130 100" aria-hidden="true" focusable="false">
+        <use href="#pot" x="10" y="8" width="100" height="92"/>
+        <text class="hero__zz hero__zz--small" x="104" y="34">z</text>
+        <text class="hero__zz hero__zz--medium" x="112" y="22">z</text>
+        <text class="hero__zz hero__zz--large" x="98" y="16">Z</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<section class="band" aria-labelledby="nights-title">
+  <div class="wrap">
+    <div class="heading-block">
+      <p class="eyebrow">こんな夜に</p>
+      <h2 class="heading-section" id="nights-title">がんばらなくていい夜を、つくります。</h2>
+    </div>
+    <div class="statements">
+      <p class="statement">布団に入っても、なかなか寝つけない。</p>
+      <p class="statement">夜中に目が覚めて、また眠れるかなと考えてしまう。</p>
+      <p class="statement">何を試せばいいのか、もうよく分からない。</p>
+    </div>
+    <p class="statement-closing">ゆるねは、そんな夜のそばで、静かに音を流し、あなたに合うすごし方を、いっしょに探します。</p>
+  </div>
+</section>
+
+<section class="band" id="night" aria-labelledby="night-title">
+  <div class="wrap feature">
+    <div class="feature__text stack-text">
+      <div class="heading-block">
+      <p class="eyebrow">夜</p>
+      <h2 class="heading-section" id="night-title">夜は、静かに、そばにいる。</h2>
+    </div>
+      <div class="feature__point">
+        <h3 class="feature__point-title">音は、アプリの中でつくります</h3>
+        <p class="copy">雨、波、森の音を、その場でつくって流します。音源のファイルは使いません。音量は、ゆっくり上げて、ゆっくり下げます。設定した上限を超えることはありません。</p>
+      </div>
+      <div class="feature__point">
+        <h3 class="feature__point-title">話したくなったら、声で</h3>
+        <p class="copy">ぽてねに、声で話しかけられます。ボタンを押さなくても、話しかけると聞き取ります。聞くのをやめたいときは、マイクのボタンで「お休み」にできます。声がないまま10分ほど続くと、自分で止まります。話さなくてもかまいません。「音だけにもどる」で、いつでも静かな夜に戻れます。</p>
+      </div>
+      <div class="feature__point">
+        <h3 class="feature__point-title">眠っても大丈夫</h3>
+        <p class="copy">画面に触れなくなって、しばらくすると、静かに終わります。</p>
+      </div>
+      <p class="copy-soft">音は、夜の画面で「音を流す」を押すと始まります（ブラウザの決まりです）。</p>
+    </div>
+    <div class="phones">
+      <figure class="screen">
+        <div class="screen__frame"><img class="screen__image" src="images/night.webp" width="780" height="1688" alt="夜の画面。雨の音を流している。"></div>
+        <figcaption class="screen__caption">音だけの夜</figcaption>
+      </figure>
+      <figure class="screen">
+        <div class="screen__frame"><img class="screen__image" src="images/talk.webp" width="780" height="1688" alt="ぽてねと話す画面。ぽてねの絵の下に、「話したくなったら、話してね。」という小さな文がひとつ。画面の下に、「聞いています…」の文字とマイクのボタンがあり、その上に「音だけにもどる」がある。"></div>
+        <figcaption class="screen__caption">ぽてねと話す夜</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="band band--surface" id="morning" aria-labelledby="morning-title">
+  <div class="wrap feature feature--reverse">
+    <div class="feature__text stack-text">
+      <div class="heading-block">
+      <p class="eyebrow">朝とふりかえり</p>
+      <h2 class="heading-section" id="morning-title">朝は、ひとことだけ。答えなくても。</h2>
+    </div>
+      <p class="copy">朝のひとことは、ボタンを押すだけです。答えずに閉じることもできます。昨夜の就寝と起床の時刻は、1週間のグラフになります。</p>
+      <p class="copy">「今週は、先週より20分長かったよ。」のように、数字は、ぽてねがやさしく伝えます。点数や順位は、つけません。</p>
+      <p class="copy-soft">画面は、すべてサンプルのデータです。</p>
+    </div>
+    <div class="phones">
+      <figure class="screen">
+        <div class="screen__frame"><img class="screen__image" src="images/home.webp" width="780" height="1688" alt="朝のホーム画面。「おはよう。」のあと、昨夜の就寝と起床の時刻、いまの気分、昨夜のすごし方を選ぶボタンがあり、「答えずに閉じる」がある。"></div>
+        <figcaption class="screen__caption">朝のひとこと</figcaption>
+      </figure>
+      <figure class="screen">
+        <div class="screen__frame"><img class="screen__image" src="images/review-week.webp" width="780" height="1688" alt="ふりかえりの画面。「週」と「目標」のタブがあり、「週」を開いている。今週は先週より20分長かったという一文と、先週との比較、曜日ごとの睡眠時間の棒グラフ。画面の下に、デモ用のデータだという断りがある。"></div>
+        <figcaption class="screen__caption">1週間のふりかえり</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="loop" aria-labelledby="loop-title">
+  <div class="wrap">
+    <div class="stack-text">
+      <div class="heading-block">
+        <p class="eyebrow">しくみ</p>
+        <h2 class="heading-section" id="loop-title">ぽてねは、夜のすごし方を、見直し続けます。</h2>
+      </div>
+      <p class="lead">ただ音を流すだけではありません。ぽてねは、あなたの夜を見て、決めて、確かめて、見直す流れを、自分で回します（計画・実行・確認・見直し。いわゆる PDCA です）。</p>
+      <p class="copy">見るのは、あなた自身の記録だけです。ほかの人のデータとは、混ざりません。</p>
+      <p class="copy">ふりかえりの「目標」には、いまの目標（夜のめやす）と、「いまのところ」の一文が出ます。</p>
+    </div>
+
+    <ol class="steps">
+      <li class="step"><h3 class="step__title">みる</h3><p class="step__text">夜のあいだ、画面に触れたか、どれくらい静かかを見ます。</p></li>
+      <li class="step"><h3 class="step__title">きめる</h3><p class="step__text">音量を下げる、音を変える、終わる。選べる動作は、あらかじめ決まっています。</p></li>
+      <li class="step"><h3 class="step__title">おこなう</h3><p class="step__text">決めたことを、プログラムが、安全な範囲で実行します。上限を超える指示は止めます。</p></li>
+      <li class="step"><h3 class="step__title">たしかめる</h3><p class="step__text">週に1回、標準のすごし方の夜と、少し変えた夜を、近い日どうしで比べます。</p></li>
+      <li class="step"><h3 class="step__title">見直す</h3><p class="step__text">合うものは選ばれやすく、合わないものは外します。変わりすぎたら、標準に戻します。</p></li>
+    </ol>
+    <svg class="loop-return" viewBox="0 0 1000 36" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <path d="M980 2 C 980 30, 940 34, 900 34 L 100 34 C 60 34, 20 30, 20 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+      <path d="M10 16 L20 4 L30 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+    </svg>
+    <p class="loop-return-note">見直したあとは、また「みる」に戻ります。</p>
+
+    <div class="feature">
+      <div class="stack-text">
+        <h3 class="feature__point-title">はじめの7夜は、ようすを見るだけ</h3>
+        <p class="copy">最初の7夜は、標準のすごし方で、夜のようすを見ます。そのあとは、3夜に1夜が標準の夜。ほかの夜は、音か、音量の下げ方のどちらか、ひとつだけを変えて試します。</p>
+        <p class="copy">結論は、夜の数がそろうまで出しません。それまでは、「いまのところ」と伝えます。</p>
+      </div>
+      <div class="timeline" role="img" aria-label="夜の並び。最初の7夜は標準の夜。そのあと、少し変えた夜が2夜、標準の夜が1夜、という並びが続く。">
+        <ul class="night-dots" aria-hidden="true"><li class="night-dot"></li><li class="night-dot"></li><li class="night-dot"></li><li class="night-dot"></li><li class="night-dot"></li><li class="night-dot"></li><li class="night-dot"></li><li class="night-dot night-dot--changed night-dot--gap"></li><li class="night-dot night-dot--changed"></li><li class="night-dot"></li><li class="night-dot night-dot--changed"></li><li class="night-dot night-dot--changed"></li><li class="night-dot"></li><li class="night-dot night-dot--changed"></li><li class="night-dot night-dot--changed"></li><li class="night-dot"></li><li class="night-dot night-dot--changed"></li><li class="night-dot night-dot--changed"></li><li class="night-dot"></li><li class="night-dot night-dot--changed"></li><li class="night-dot night-dot--changed"></li><li class="night-dot"></li></ul>
+        <div class="legend" aria-hidden="true">
+          <span class="legend__item"><span class="night-dot"></span>標準のすごし方の夜</span>
+          <span class="legend__item"><span class="night-dot night-dot--changed"></span>少し変えた夜</span>
+        </div>
+      </div>
+    </div>
+    <p class="copy-soft note-spaced">この仕組みは、合成した利用者で、動きを確かめています。確かめたのは仕組みの動きで、効果ではありません。</p>
+  </div>
+</section>
+
+<section class="band band--surface" id="yururi" aria-labelledby="yururi-title">
+  <div class="wrap promises">
+    <div class="stack-text">
+      <div class="heading-block">
+      <p class="eyebrow">ゆるり</p>
+      <h2 class="heading-section" id="yururi-title">ゆるりの約束</h2>
+    </div>
+      <p class="lead">「ゆるり」は、力を抜いて、ゆったり、という意味です。ゆるねの作りのすべてに、この約束が通っています。</p>
+    </div>
+    <dl class="promise-list">
+      <div class="promise"><dt class="promise__term">せかさない</dt><dd class="promise__text">1晩に変えるのは、ひとつだけ。結論は、夜の数がそろうまで出しません。</dd></div>
+      <div class="promise"><dt class="promise__term">責めない</dt><dd class="promise__text">点数も、連続記録も、赤い警告もありません。記録のない夜は、失敗ではありません。</dd></div>
+      <div class="promise"><dt class="promise__term">頼まない</dt><dd class="promise__text">必要な操作は、夜を始めることだけ。通知は送りません。</dd></div>
+      <div class="promise"><dt class="promise__term">やわらかい言葉で</dt><dd class="promise__text">「めやす」「ようす」と言います。数字を、押しつけません。</dd></div>
+      <div class="promise"><dt class="promise__term">いつでも標準に</dt><dd class="promise__text">「好みを覚える」をオフにすると、標準のすごし方のままです。</dd></div>
+      <div class="promise"><dt class="promise__term">静かに働く</dt><dd class="promise__text">夜の画面には、よけいな文字を出しません。</dd></div>
+      <div class="promise"><dt class="promise__term">毎日は言わない</dt><dd class="promise__text">受診のすすめは、毎日は出しません。出すときも間をあけ、「今は表示しない」で止められます。</dd></div>
+    </dl>
+  </div>
+</section>
+
+<section class="band band--tint" id="safety" aria-labelledby="safety-title">
+  <div class="wrap">
+    <div class="heading-block">
+      <p class="eyebrow">安心のこと</p>
+      <h2 class="heading-section" id="safety-title">AIにまかせるのは、言葉のところだけ。</h2>
+    </div>
+    <p class="lead lead--spaced">AIを使わなくてよいことには、AIを使いません。統計、判定、音量の上限、終わらせる条件は、プログラムが決めます。AIは、夜のあいだの応答と、ぽてねとの会話の言葉に使います。</p>
+    <div class="safety-groups">
+      <div>
+        <h3 class="safety-group__title">返事は、出る前に検査します</h3>
+        <ul class="checks">
+          <li><span class="checks__lead">入力</span>　電話番号やメールなどは「○○」に伏せます。病気や薬の質問には、AIを使わず、決まった文で答えます。</li>
+          <li><span class="checks__lead">出力</span>　数字、過去のできごと、禁止された表現を、返事から止めます。</li>
+          <li><span class="checks__lead">動作</span>　AIが呼べる動作は、許可リストの中だけ。上限を超える指示は、拒否して記録します。</li>
+          <li><span class="checks__lead">上限と停止</span>　呼び出しの回数に上限があり、止まったときは、規則だけで夜を続けます。止めるスイッチもあります。</li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="safety-group__title">あなたのデータ</h3>
+        <ul class="checks">
+          <li>会話の全文は保存しません。保存するのは、構造化した記録だけです。</li>
+          <li>記録は利用者ごとに分けて保存され、ほかの人からは見えません。</li>
+          <li>「データを消す」で、記録と覚えたことを、すべて削除できます（パスワードを入力して確認します）。</li>
+          <li>ぽてねの判断は、会話の本文を含めない形で、すべて記録に残ります。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="stack-text stack-text--tight stack-text--spaced">
+      <h3 class="safety-group__title safety-group__title--flush">Google Cloud で動かす構成です</h3>
+      <dl class="cloud-list">
+        <dt>Cloud Run</dt><dd>アプリ</dd>
+        <dt>Firestore</dt><dd>記録（利用者ごとに分離）</dd>
+        <dt>Firebase Authentication</dt><dd>ログイン</dd>
+        <dt>Gemini</dt><dd>夜の応答と、会話の言葉</dd>
+        <dt>Model Armor</dt><dd>入力と出力の検査（自前の検査に重ねる）</dd>
+        <dt>Cloud Text-to-Speech</dt><dd>ぽてねの声</dd>
+        <dt>Cloud Logging / Trace</dt><dd>運用の記録（本文は含めません）</dd>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="limits" aria-labelledby="limits-title">
+  <div class="wrap">
+    <div class="heading-block">
+      <p class="eyebrow">できないこと</p>
+      <h2 class="heading-section" id="limits-title">ゆるねが、しないこと。</h2>
+    </div>
+    <ul class="limits">
+      <li>病気の診断は、しません。</li>
+      <li>薬についての助言は、しません。</li>
+      <li>ぐっすり眠れる、とは約束しません。</li>
+      <li>寝る時間を無理に短くするような方法は、取り入れません。</li>
+    </ul>
+    <div class="pot-says">
+      <svg class="pot" viewBox="0 0 100 92" aria-hidden="true"><use href="#pot"/></svg>
+      <p>「つらさが続くときは、医師に相談してください。ここでは、病気や薬のことには答えられません。」</p>
+    </div>
+  </div>
+</section>
+
+<section class="band band--surface" id="faq" aria-labelledby="faq-title">
+  <div class="wrap">
+    <div class="heading-block">
+      <p class="eyebrow">よくある質問</p>
+      <h2 class="heading-section" id="faq-title">気になること。</h2>
+    </div>
+    <div class="faq">
+      <details class="faq-item"><summary>医療のアプリですか。</summary><div class="faq-item__answer"><p>いいえ。ゆるねは医療機器ではなく、睡眠のサポートです。つらさが続くときは、医師に相談してください。</p></div></details>
+      <details class="faq-item"><summary>ぽてねとの会話は、残りますか。</summary><div class="faq-item__answer"><p>会話の全文は保存しません。ログにも、会話の本文は出しません。</p></div></details>
+      <details class="faq-item"><summary>雨や波の音は、どこから来ますか。</summary><div class="faq-item__answer"><p>アプリの中で、その場でつくっています。音源のファイルは使っていません。</p></div></details>
+      <details class="faq-item"><summary>通知は来ますか。</summary><div class="faq-item__answer"><p>来ません。必要な操作は、夜を始めることだけです。</p></div></details>
+      <details class="faq-item"><summary>データは消せますか。</summary><div class="faq-item__answer"><p>設定の「データを消す」から、記録と覚えたことを、すべて削除できます。パスワードを入力して確認します。</p></div></details>
+      <details class="faq-item"><summary>ほかの人のデータと混ざりませんか。</summary><div class="faq-item__answer"><p>記録は、利用者ごとに分けて保存します。ほかの人の記録が、あなたの画面に出ることはありません。</p></div></details>
+      <details class="faq-item"><summary>どんな端末で使えますか。</summary><div class="faq-item__answer"><p>スマートフォンのブラウザで動きます。ホーム画面に追加して、アプリのように使えます。</p></div></details>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap site-footer__grid">
+    <span class="wordmark">
+      <svg class="pot pot--small" viewBox="0 0 100 92" aria-hidden="true"><use href="#pot"/></svg>
+      ゆるね
+    </span>
+    <p class="site-footer__legal">つらさが続くときは、医師に相談してください。ゆるねは医療機器ではありません。</p>
+    <p class="site-footer__note">第5回 Agentic AI Hackathon with Google Cloud の作品です。このページの画面は、すべてサンプルのデータです。</p>
+  </div>
+</footer>
+
+</div>
+
+</body>
+</html>
