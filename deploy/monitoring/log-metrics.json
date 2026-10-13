@@ -1,5 +1,5 @@
 {
-  "_comment": "ログから作るメトリクスの定義。gcloud の設定ファイルの形そのものではなく、このプロジェクト独自の形。deploy/apply-monitoring.ps1 が、これを読んで gcloud logging metrics create を呼ぶ。NOT VERIFIED: 実際のプロジェクトには、まだ作っていない。filter と labelExtractors が参照する event・項目名は、MonitoringConfigPolicyTest が、LogConstants と AuditEventSchema に実在することを確かめる。",
+  "_comment": "ログから作るメトリクスの定義。gcloud の設定ファイルの形そのものではなく、このプロジェクト独自の形。deploy/apply-monitoring.ps1 が、これを読んで、Cloud Logging の API でメトリクスを作る。2026-10-13 に、実際のプロジェクトに作り、リクエストの遅延に値が入ることを確かめた。filter と labelExtractors が参照する event・項目名は、MonitoringConfigPolicyTest が、LogConstants と AuditEventSchema に実在することを確かめる。",
   "metrics": [
     {
       "name": "agent_tool_rejected",

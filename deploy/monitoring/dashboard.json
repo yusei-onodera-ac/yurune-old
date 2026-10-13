@@ -1,5 +1,5 @@
 {
-  "_comment": "運用ダッシュボードの定義。独自の形。deploy/apply-monitoring.ps1 が、log-metrics.json のメトリクスを使って gcloud monitoring dashboards create に変換する。NOT VERIFIED。削る順序の対象（時間が足りなければ、アラートより先に削ってよい）。",
+  "_comment": "運用ダッシュボードの定義。独自の形。deploy/apply-monitoring.ps1 が、log-metrics.json のメトリクスを使って、Cloud Monitoring の API でダッシュボードに変換して作る。2026-10-13 に、実際のプロジェクトに作った。件数のメトリクスは 1 分ごとの件数、分布のメトリクスは p50 と p95 の線で出す。",
   "displayName": "yurune 運用ダッシュボード",
   "widgets": [
     { "title": "5xx の件数", "metric": "request_5xx" },

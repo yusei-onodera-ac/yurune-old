@@ -16,7 +16,7 @@
     8 the alert policies in deploy/monitoring/alert-policies.json exist
     9 /ready answers (does not check its status code; a 503 there can be a true, if degraded, reading)
 
-  Run against a real project on 2026-10-12. Checks 7 and 8 fail until deploy/apply-monitoring.ps1 has been run.
+  Run against a real project on 2026-10-12 and 2026-10-13. Checks 7 and 8 fail until deploy/apply-monitoring.ps1 has been run.
 #>
 param(
     [Parameter(Mandatory = $true)][string]$ProjectId,
@@ -90,7 +90,7 @@ if ($images) {
     Report 'the latest image was found for the scan result' $false 'no image listed; check the Artifact Registry repository name'
 }
 
-# 7 and 8 observability (milestone O2, item B3): metrics and alert policies exist
+# 7 and 8 observability: metrics and alert policies exist
 $metricsConfigPath = Join-Path $PSScriptRoot 'monitoring\log-metrics.json'
 if (Test-Path $metricsConfigPath) {
     $metricsConfig = Get-Content $metricsConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -105,7 +105,7 @@ if (Test-Path $metricsConfigPath) {
 $alertConfigPath = Join-Path $PSScriptRoot 'monitoring\alert-policies.json'
 if (Test-Path $alertConfigPath) {
     $alertConfig = Get-Content $alertConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
-    $existingPolicies = & gcloud alpha monitoring policies list --format 'value(displayName)' 2>$null
+    $existingPolicies = & gcloud monitoring policies list --format 'value(displayName)' 2>$null
     foreach ($policy in $alertConfig.policies) {
         Report "alert policy exists: $($policy.name)" ($existingPolicies -contains $policy.name)
     }

@@ -22,8 +22,8 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 /**
- * 監視の定義（deploy/monitoring）の整合。本物の Cloud Monitoring には、まだ適用していない
- * ので、ここでは、設定ファイルが JSON として読めること、メトリクスの絞り込みが参照する
+ * 監視の定義（deploy/monitoring）の整合。本物の Cloud Monitoring に作れたかどうかは、deploy/verify.ps1 が確かめる。
+ * ここでは、設定ファイルが JSON として読めること、メトリクスの絞り込みが参照する
  * event と項目名が、実在する種類・許可された項目名であること、アラートとダッシュボードが参照するメトリクス
  * （またはアップタイムの確認）が、定義されていることまでを確かめる。
  */

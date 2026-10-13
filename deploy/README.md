@@ -38,7 +38,7 @@ $env:YURUNE_DEMO_PASSWORD = '<パスワード>'
 # 方針どおりに設定されているかの確認
 .\deploy\verify.ps1 -ProjectId <プロジェクト ID>
 
-# 監視（メトリクス、アラート、ダッシュボード）。まだ実行していない
+# 監視（メトリクス、/ready のアップタイムの確認、アラート、ダッシュボード）。何度実行しても、重複はできない
 .\deploy\apply-monitoring.ps1 -ProjectId <プロジェクト ID> -ServiceHost <Cloud Run のホスト名>
 ```
 
@@ -116,7 +116,13 @@ severity="WARNING" AND jsonPayload.event="llm"       # LLM 呼び出しの失敗
 - アラート（`alert-policies.json`）: 5xx の率、遅延（p95）、ブレーカーが開いたままの時間、LLM の失敗率、守りの作動の急増、`/ready` の死活。しきい値は、すべて仮置きです（根拠なし。実際の負荷を測ってから決める）。通知先は空欄です。
 - ダッシュボード（`dashboard.json`）: 上のメトリクスを並べただけの、最小のものです。
 
-定義が JSON として読めること、参照している event と項目名が実在すること、アラートが参照するメトリクスが定義されていることは、`MonitoringConfigPolicyTest` が確かめます。プロジェクトへの適用は `apply-monitoring.ps1` ですが、まだ実行していません。
+定義が JSON として読めること、参照している event と項目名が実在すること、アラートが参照するメトリクスが定義されていることは、`MonitoringConfigPolicyTest` が確かめます。
+
+プロジェクトへの適用は `apply-monitoring.ps1` です。2026-10-13 に実行しました。gcloud のコマンドではなく、Cloud Logging と Cloud Monitoring の API を直接呼びます。引数に二重引用符の入った gcloud のコマンドは、PowerShell 5.1 で壊れるためです。同じ名前のものがあれば、置き換えます。
+
+- `/ready` の死活は、アップタイムの確認（1 分ごと。世界 6 か所から）で見ています。
+- アラートの件数は、「5 分間に N 件より多い」の形で、5 分ごとの件数を見ています。
+- 通知先は空です。アラートが出ても、連絡は来ません。Cloud Console で、通知先（メールなど）を足してください。
 
 ## `/ready`
 
@@ -132,11 +138,12 @@ Cloud Run は `/healthz` を自分で使うので、外からは 404 になり�
 - Windows PowerShell 5.1 では、`$ErrorActionPreference = 'Stop'` のとき、gcloud が標準エラーに出す文（進み具合や「見つからない」の答え）で、そのまま止まる。終了コードだけで判定するようにした（`deploy.ps1`、`verify.ps1`）。
 - 作ったばかりのサービスアカウントには、数秒のあいだ、権限を付けられない（「存在しない」と返る）。待って、やり直すようにした（`deploy.ps1`）。
 - JSON を既定の文字コードで読むと、文字化けして壊れる。UTF-8 を指定した（`verify.ps1`、`apply-monitoring.ps1`）。
+- PowerShell で `gcloud ... | Select-Object -First 1` とすると、パイプが途中で切れて、終了コードが -1 になる。パイプを切らずに、文字列にしてから使うようにした（`apply-monitoring.ps1`）。
 
 ## まだ確かめていないこと
 
-- `apply-monitoring.ps1` は、実行していません。メトリクスとアラートは、プロジェクトにありません。`verify.ps1` の失敗 13 件は、これが理由です。`--log-filter` に二重引用符が入っているので、PowerShell 5.1 で壊れるかもしれません。
-- `deploy.ps1`、`verify.ps1`（監視を除く 15 項目）、`create-demo-account.ps1`、`Dockerfile` は、実際のプロジェクトで実行して、通りました。
+- 監視は、2026-10-13 にプロジェクトへ作りました。`verify.ps1` は、全 28 項目が通りました。値が入ることを確かめたのは、リクエストの遅延のメトリクスと、`/ready` のアップタイムの確認（6 か所とも成功）です。LLM、守り、道具の拒否のメトリクスと、アラートが実際に働くかは、まだ確かめていません。しきい値も、仮置きのままです。
+- `deploy.ps1`、`verify.ps1`、`create-demo-account.ps1`、`apply-monitoring.ps1`、`Dockerfile` は、実際のプロジェクトで実行して、通りました。
 - 本物のブラウザでの通し（ログイン、会話の夜、医療の質問への決まった文、審査用アカウント）は、本物の Gemini と Model Armor で通りました。読み上げの声は、耳では確かめていません。
 - Model Armor が、日本語の危ない文をどのくらい見つけるかは、測っていません。
 - 審査用アカウントのデモデータ（14 日分の記録と、朝のひとこと待ちの 1 晩）は、開かれた日が変わると、その日の日付で入れ直します。すでにある日は書き換えません。日付を決めるのは、アプリの時計（Cloud Run の時刻）です。
