@@ -1,0 +1,13 @@
+{
+  "_comment": "運用ダッシュボードの定義。独自の形。deploy/apply-monitoring.ps1 が、log-metrics.json のメトリクスを使って gcloud monitoring dashboards create に変換する。NOT VERIFIED。削る順序の対象（時間が足りなければ、アラートより先に削ってよい）。",
+  "displayName": "yurune 運用ダッシュボード",
+  "widgets": [
+    { "title": "5xx の件数", "metric": "request_5xx" },
+    { "title": "リクエストの遅延（分布）", "metric": "request_latency" },
+    { "title": "LLM の失敗", "metric": "llm_error" },
+    { "title": "LLM の遅延（分布）", "metric": "llm_latency" },
+    { "title": "道具の呼び出しの拒否（規則ごと）", "metric": "agent_tool_rejected" },
+    { "title": "守りによる差し替え（理由ごと）", "metric": "guard_blocked" },
+    { "title": "LLM ブレーカーの開", "metric": "breaker_open" }
+  ]
+}

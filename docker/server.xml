@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Hardened Tomcat configuration for the container image.
+  - The shutdown port is disabled (port="-1"): nothing can stop the server over a socket.
+  - The HTTP port comes from the system property http.port (the image sets it from Cloud Run's PORT).
+  - Error pages never show a stack trace or the server version.
+  - Only the war that is baked into the image is deployed (autoDeploy off), so nothing can be dropped in at run time.
+  - The Server header is replaced.
+-->
+<Server port="-1" shutdown="SHUTDOWN">
+  <Listener className="org.apache.catalina.startup.VersionLoggerListener" logArgs="false"/>
+  <Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener"/>
+  <Listener className="org.apache.catalina.core.ThreadLocalLeakPreventionListener"/>
+
+  <Service name="Catalina">
+    <Connector port="${http.port}" protocol="HTTP/1.1"
+               connectionTimeout="20000"
+               maxPostSize="65536"
+               maxHttpHeaderSize="8192"
+               maxParameterCount="100"
+               server="web"/>
+
+    <Engine name="Catalina" defaultHost="localhost">
+      <Host name="localhost" appBase="webapps" unpackWARs="true" autoDeploy="false" deployOnStartup="true">
+        <!-- Cloud Run terminates TLS in front of the container and tells us so with X-Forwarded-Proto.
+             Only Google's front end can reach the container, so the header is trusted. -->
+        <Valve className="org.apache.catalina.valves.RemoteIpValve"
+               internalProxies=".*"
+               remoteIpHeader="X-Forwarded-For"
+               protocolHeader="X-Forwarded-Proto"/>
+        <Valve className="org.apache.catalina.valves.ErrorReportValve" showReport="false" showServerInfo="false"/>
+      </Host>
+    </Engine>
+  </Service>
+</Server>

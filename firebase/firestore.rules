@@ -1,0 +1,20 @@
+rules_version = '2';
+
+// ゆるねの利用者は、Firestore に直接つながらない。読み書きは、すべてサーバー（サービスアカウント）を通る。
+// それでも、別の経路でつながれたときに備えて、ここでも守る（サーバーの絞り込みとの二重）。
+//   - 読めるのは、ログインした本人の users/{uid} 以下だけ。メール確認が済んでいること。
+//   - 書き込みは、だれにもできない。書くのは、サービスアカウントだけ（ルールを通らない）。
+//   - それ以外の場所は、読めも書けもしない。
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/{document=**} {
+      allow read: if request.auth != null
+                  && request.auth.uid == uid
+                  && request.auth.token.email_verified == true;
+      allow write: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

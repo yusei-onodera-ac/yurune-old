@@ -1,0 +1,81 @@
+{
+  "_comment": "ログから作るメトリクスの定義。gcloud の設定ファイルの形そのものではなく、このプロジェクト独自の形。deploy/apply-monitoring.ps1 が、これを読んで gcloud logging metrics create を呼ぶ。NOT VERIFIED: 実際のプロジェクトには、まだ作っていない。filter と labelExtractors が参照する event・項目名は、MonitoringConfigPolicyTest が、LogConstants と AuditEventSchema に実在することを確かめる。",
+  "metrics": [
+    {
+      "name": "agent_tool_rejected",
+      "description": "夜のエージェントの道具の呼び出しが、拒否された件数（拒否の規則ごと）。仮置きの運用の目安: 急に増えたら、新しい道具や、プロンプトへの注入を疑う。",
+      "event": "agent",
+      "fields": ["accepted", "rejectReason"],
+      "filter": "resource.type=\"cloud_run_revision\" AND jsonPayload.event=\"agent\" AND jsonPayload.detail.accepted=false",
+      "labelExtractors": {
+        "rejectReason": "EXTRACT(jsonPayload.detail.rejectReason)"
+      },
+      "metricKind": "DELTA",
+      "valueType": "INT64"
+    },
+    {
+      "name": "llm_error",
+      "description": "LLM 呼び出しが、OK・REJECTED 以外の結果で終わった件数（ERROR・TIMEOUT・PARSE_ERROR）。",
+      "event": "llm",
+      "fields": ["outcome"],
+      "filter": "resource.type=\"cloud_run_revision\" AND jsonPayload.event=\"llm\" AND severity=\"WARNING\"",
+      "labelExtractors": {
+        "outcome": "EXTRACT(jsonPayload.detail.outcome)"
+      },
+      "metricKind": "DELTA",
+      "valueType": "INT64"
+    },
+    {
+      "name": "llm_latency",
+      "description": "LLM 呼び出し 1 回あたりの時間の分布（ミリ秒）。p95 のアラートが参照する。",
+      "event": "llm",
+      "fields": ["latencyMs"],
+      "filter": "resource.type=\"cloud_run_revision\" AND jsonPayload.event=\"llm\"",
+      "valueExtractor": "EXTRACT(jsonPayload.detail.latencyMs)",
+      "metricKind": "DELTA",
+      "valueType": "DISTRIBUTION",
+      "bucketOptions": { "exponentialBuckets": { "numFiniteBuckets": 32, "growthFactor": 2, "scale": 10 } }
+    },
+    {
+      "name": "guard_blocked",
+      "description": "会話の返事が、守りによって差し替えられた件数（差し替えた理由ごと）。",
+      "event": "conversation",
+      "fields": ["outputViolation"],
+      "filter": "resource.type=\"cloud_run_revision\" AND jsonPayload.event=\"conversation\" AND jsonPayload.detail.outputViolation:*",
+      "labelExtractors": {
+        "outputViolation": "EXTRACT(jsonPayload.detail.outputViolation)"
+      },
+      "metricKind": "DELTA",
+      "valueType": "INT64"
+    },
+    {
+      "name": "breaker_open",
+      "description": "LLM のサーキットブレーカーが開いた件数（state の変化を数える。継続のアラートが使う）。",
+      "event": "control",
+      "fields": ["kind", "state"],
+      "filter": "resource.type=\"cloud_run_revision\" AND jsonPayload.event=\"control\" AND jsonPayload.detail.kind=\"llm_breaker\" AND jsonPayload.detail.state=\"open\"",
+      "metricKind": "DELTA",
+      "valueType": "INT64"
+    },
+    {
+      "name": "request_5xx",
+      "description": "応答が 5xx だったリクエストの件数。",
+      "event": "request",
+      "fields": ["status"],
+      "filter": "resource.type=\"cloud_run_revision\" AND jsonPayload.event=\"request\" AND jsonPayload.detail.status>=500",
+      "metricKind": "DELTA",
+      "valueType": "INT64"
+    },
+    {
+      "name": "request_latency",
+      "description": "リクエスト 1 回あたりの時間の分布（ミリ秒）。p95 のアラートが参照する。",
+      "event": "request",
+      "fields": ["latencyMs"],
+      "filter": "resource.type=\"cloud_run_revision\" AND jsonPayload.event=\"request\"",
+      "valueExtractor": "EXTRACT(jsonPayload.detail.latencyMs)",
+      "metricKind": "DELTA",
+      "valueType": "DISTRIBUTION",
+      "bucketOptions": { "exponentialBuckets": { "numFiniteBuckets": 32, "growthFactor": 2, "scale": 10 } }
+    }
+  ]
+}
