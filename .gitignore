@@ -20,3 +20,6 @@ node_modules/
 
 # 紹介ページの確認用に作るファイル（画像を埋め込んだ 1 枚）
 lp/artifact.html
+
+# Claude Code の作業用フォルダ（作業用の複製が入る）
+.claude/
