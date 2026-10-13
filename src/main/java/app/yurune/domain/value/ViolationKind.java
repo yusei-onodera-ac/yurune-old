@@ -15,6 +15,8 @@ public enum ViolationKind {
     LENGTH("length"),
     SYSTEM_PROMPT_LEAK("system_prompt_leak"),
     INJECTION("injection"),
+    /** 憎悪、嫌がらせ、性的な表現など。返事をせず、無視する（Model Armor の言葉の中身の検査が見つけたとき）。 */
+    INAPPROPRIATE("inappropriate"),
     EMPTY("empty");
 
     private final String id;

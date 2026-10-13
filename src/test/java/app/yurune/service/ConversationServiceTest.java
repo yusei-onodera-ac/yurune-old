@@ -289,6 +289,50 @@ class ConversationServiceTest {
         assertEquals(0, llmCalls.get());
     }
 
+    private ArmorGateway armorFlaggingPromptWith(Set<String> filters) {
+        return new ArmorGateway() {
+            @Override
+            public boolean isEnabled() {
+                return true;
+            }
+
+            @Override
+            public ArmorVerdict screenPrompt(String text) {
+                return ArmorVerdict.blocked(filters);
+            }
+
+            @Override
+            public ArmorVerdict screenResponse(String text) {
+                return ArmorVerdict.safe();
+            }
+        };
+    }
+
+    @Test
+    void inappropriateWordsFoundOnlyByTheContentCheckAreIgnoredWithoutAnyReply() {
+        ConversationService withArmor = create(llm(), armorFlaggingPromptWith(Set.of("rai")), 0, 1000);
+
+        ConversationReply reply = withArmor.respond("ふつうのはなし", List.of(), facts);
+
+        assertFalse(reply.shouldSpeak());
+        assertEquals("", reply.getText());
+        assertEquals(ConversationReply.Source.SILENCE, reply.getSource());
+        assertEquals("inappropriate", reply.getViolationKind().orElseThrow().asId());
+        assertEquals(0, llmCalls.get());
+        assertEquals("inappropriate", events.get(0).findViolationKind().orElseThrow());
+    }
+
+    @Test
+    void anInjectionAttemptStillGetsTheFixedReplyEvenWhenTheContentCheckAlsoFoundSomething() {
+        ConversationService withArmor = create(llm(), armorFlaggingPromptWith(Set.of("rai", "pi_and_jailbreak")), 0, 1000);
+
+        ConversationReply reply = withArmor.respond("ふつうのはなし", List.of(), facts);
+
+        assertTrue(reply.shouldSpeak());
+        assertEquals(TemplateConstants.FALLBACK_REPLY, reply.getText());
+        assertEquals(0, llmCalls.get());
+    }
+
     @Test
     void theInspectionServiceCanStopAReplyTheOwnLayerAccepted() {
         ConversationService withArmor = create(llm(), armor(false, true, false), 0, 1000);

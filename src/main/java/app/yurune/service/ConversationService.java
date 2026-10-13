@@ -29,6 +29,8 @@ import java.util.function.Consumer;
  *       → 入力の検査サービス（Model Armor）→ LLM → 出力の検査（自前）→ 出力の検査サービス
  *       → 通ったら、LLM の文。引っかかったら、定型文に差し替える。
  *
+ * 入力の検査サービスが、不適切な言葉（憎悪、嫌がらせ、性的な表現）だけを見つけたときは、返事をせずに、無視する。
+ * 指示の無視などを見つけたときは、定型文に差し替える。
  * 定型文は、LLM に書かせない（T-MED、T-FALLBACK、T-DOWN）。医療領域の発言は、LLM を呼ばずに T-MED を返す。
  * LLM・検査サービスが使えないときは、T-DOWN で応じる。記録・グラフ・夜の音と自動終了は、この会話に左右されない。
  * 発言も返事も、保存も、記録もしない（種類と件数だけを、守りの記録に渡す）。
@@ -125,9 +127,13 @@ public final class ConversationService {
         long startedAt = System.nanoTime();
         try {
             if (armorGateway.isEnabled()) {
-                boolean blocked = armorGateway.screenPrompt(input.getSanitizedText()).isBlocked();
+                ArmorVerdict verdict = armorGateway.screenPrompt(input.getSanitizedText());
                 armorAvailability.recordSuccess();
-                if (blocked) {
+                if (verdict.isContentOnly()) {
+                    // 不適切な言葉（憎悪、嫌がらせ、性的な表現）だけが見つかったときは、返事をせずに、無視する
+                    return new Result(ConversationReply.ignored(ViolationKind.INAPPROPRIATE), null);
+                }
+                if (verdict.isBlocked()) {
                     return new Result(ConversationReply.replaced(TemplateConstants.FALLBACK_REPLY, ViolationKind.INJECTION), null);
                 }
             }

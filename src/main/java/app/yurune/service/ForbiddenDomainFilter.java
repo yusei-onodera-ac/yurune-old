@@ -39,9 +39,15 @@ public final class ForbiddenDomainFilter {
         return findViolation(text).isPresent();
     }
 
-    /** 利用者の発言に、医療領域（病名、薬、受診、つらさの訴えなど）の語が入っているか。 */
+    /**
+     * 利用者の発言に、医療領域（病名、薬、受診、つらさの訴えなど）の語が入っているか。
+     * 語を、文字として含むだけの日常の言葉（憂うつ、うつ伏せなど）は、先に取り除いてから照合する。
+     */
     public boolean containsMedicalTopic(String text) {
         String target = TextNormalizer.normalizeForMatching(text);
+        for (String everyday : ForbiddenTermConstants.MEDICAL_TERM_EVERYDAY_WORDS) {
+            target = target.replace(everyday, " ");
+        }
         for (String term : ForbiddenTermConstants.MEDICAL_INPUT_TERMS) {
             if (target.contains(term)) {
                 return true;

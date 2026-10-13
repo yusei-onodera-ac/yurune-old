@@ -130,9 +130,11 @@ const T_DOWN = 'いまはお話しできません。';
   await waitLoad();
   check('night starts in talk mode', (await here()) === '/night' && (await ev(`!!document.getElementById('nightTalk')`)) === true);
   check('there is no text input in the talk screen (voice only)', (await ev(`document.querySelectorAll('input[type=text], input:not([type]), textarea').length`)) === 0);
+  const duckNow = () => ev(`window.yuruneNightSound ? window.yuruneNightSound.status().duck : null`);
   // 0 ボタンを押さなくても、会話の画面を開くと、聞き始める
   check('listening starts by itself when the talk screen opens (no button pressed)', await waitFor(async () => (await ev('window.__recStarts')) >= 1, 3000));
   check('the hint says it is listening and the mic is shown as on', (await hintText()) === '聞いています…' && (await ev(`document.getElementById('micButton').getAttribute('aria-pressed')`)) === 'true', await hintText());
+  check('while listening, the ambient sound is lowered (ducked to 0.2) so it does not cover the voice', (await duckNow()) === 0.2, String(await duckNow()));
   await shot('s4_talk_start.png');
   await fake('/reset');
 
@@ -164,9 +166,11 @@ const T_DOWN = 'いまはお話しできません。';
   // 利用者が「お休み」にする
   await ev(`document.getElementById('micButton').click()`); await sleep(300);
   check('pressing the mic rests the listening (stops, hint and state change)', (await recording()) === false && /お休み/.test(await hintText()) && (await ev(`document.getElementById('micButton').getAttribute('aria-pressed')`)) === 'false', await hintText());
+  check('resting the listening gives the ambient sound back (duck 1)', (await duckNow()) === 1, String(await duckNow()));
   await ev(`window.__speak('お休みのあいだの声')`); await sleep(1200);
   check('what is said while resting is not sent', (await replyCount()) === bubblesBeforeNoise);
   await ev(`document.getElementById('micButton').click()`);
+  check('listening again lowers the ambient sound again', (await duckNow()) === 0.2, String(await duckNow()));
   check('pressing again listens again (and the waiting words are not lost)', await waitFor(async () => (await replyCount()) >= bubblesBeforeNoise + 1, 6000));
   await sleep(2300);
   // 声がないまま続いたら、自分で止まる（確認のため、10 分を 1.5 秒にする）

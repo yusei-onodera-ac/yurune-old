@@ -18,6 +18,8 @@
   /* 上げるときは、少なくともこの秒数をかける。急に大きくして起こさないため */
   var UP_RAMP_SEC = 10;
   var DOWN_RAMP_SEC = 3;
+  /* 声を聞いている間、環境音を、この割合まで下げる（仮置き）。環境音が、声に重なると、声を文字にする精度が落ちるため */
+  var DUCK_RAMP_SEC = 1;
   /* 曲を変えるときは、この秒数で重ねる */
   var CROSSFADE_SEC = 4;
   var RETIRE_MARGIN_SEC = 0.5;
@@ -89,6 +91,8 @@
   var paused = false;
   var pending = null;
   var appliedTarget = null;
+  /* 環境音に掛ける割合。1 は、そのまま。声を聞いている間だけ、会話の画面が下げる（setDuck） */
+  var duck = 1;
   var capPct = VOLUME_CAP_FALLBACK_PCT;
   var label = '';
   var stateElement = null;
@@ -313,7 +317,7 @@
 
   /* 利用者の音量（%）を、上限の内側のゲインにする。サーバーの上限と、端末の上限の、どちらも超えない */
   function toGain(percent) {
-    return clamp(percent, 0, capPct) / PERCENT_MAX * MASTER_MAX_GAIN;
+    return clamp(percent, 0, capPct) / PERCENT_MAX * MASTER_MAX_GAIN * duck;
   }
 
   function createContext() {
@@ -448,6 +452,19 @@
     }
     appliedTarget = fading ? null : target;
     rampTo(context, master.gain, target, seconds);
+  }
+
+  /* 声を聞いている間だけ、環境音を下げる（factor は 0〜1）。ゆっくり下げる・戻す。フェード中と、止めている間は、触らない。
+     上限は超えない（掛けるのは 1 以下だけ） */
+  function setDuck(factor) {
+    duck = clamp(Number(factor), 0, 1);
+    if (!started || leaving || paused || !context || !master || pending.fadeRemainingSec > 0) {
+      return;
+    }
+    var target = toGain(pending.volumePct);
+    appliedTarget = target;
+    /* 下げるのは早く、戻すのは、ほかの音量の上げ方と同じに、ゆっくり（眠りかけの人を、急に起こさない） */
+    rampTo(context, master.gain, target, target > master.gain.value ? UP_RAMP_SEC : DUCK_RAMP_SEC);
   }
 
   function begin() {
@@ -773,6 +790,7 @@
       started: started,
       leaving: leaving,
       paused: paused,
+      duck: duck,
       track: current ? current.key : null,
       contextState: context ? context.state : null,
       gain: master ? master.gain.value : null,
@@ -786,6 +804,7 @@
      ロック画面の操作は、実機・ブラウザの外からしか起きないので、同じ入口（pauseSound・resumeSound）を、直に呼んで確かめる */
   window.yuruneNightSound = {
     playVoice: playVoice,
+    setDuck: setDuck,
     renderTrack: renderTrack,
     status: status,
     simulateMediaSessionPause: pauseSound,

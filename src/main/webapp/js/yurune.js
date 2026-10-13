@@ -26,6 +26,8 @@
   var TALK_IDLE_CHECK_MS = 5000;
   /* 1 文字だけの聞き取りは、物音の聞き違いとみなして、送らない */
   var TALK_MIN_CHARS = 2;
+  /* 声を聞いている間の、環境音の大きさ（普段に掛ける割合。仮置き）。環境音が重なると、声を文字にする精度が落ちる */
+  var TALK_DUCK = 0.2;
   var TEXT_DOWN = 'いまはお話しできません。';
   var TEXT_HINT_LISTENING = '聞いています…';
   var TEXT_HINT_REPLYING = 'ぽてねの番だよ';
@@ -412,6 +414,20 @@
     var restartTimer = null;
     var speakTimer = null;
     var lastHeardAt = Date.now();
+    /* 環境音を下げているか */
+    var ducked = false;
+
+    /* 聞く状態（お休みでも、許されないのでもない）のあいだは、環境音を下げる。ぽてねが話している間なども、聞く状態のままなので、上げ下げしない */
+    function applyDuck(on) {
+      if (on === ducked) {
+        return;
+      }
+      ducked = on;
+      var sound = window.yuruneNightSound;
+      if (sound && typeof sound.setDuck === 'function') {
+        sound.setDuck(on ? TALK_DUCK : 1);
+      }
+    }
 
     /* 声がないまま続いたら、聞くのをやめる長さ。画面の属性で変えられる */
     function idleLimitMs() {
@@ -440,6 +456,7 @@
       mic.classList.toggle('on', Boolean(recognition));
       var listening = Boolean(Recognition) && wantListening && !blocked;
       mic.setAttribute('aria-pressed', listening ? 'true' : 'false');
+      applyDuck(listening);
       mic.setAttribute('aria-label', listening ? TEXT_MIC_PAUSE : TEXT_MIC_RESUME);
     }
 

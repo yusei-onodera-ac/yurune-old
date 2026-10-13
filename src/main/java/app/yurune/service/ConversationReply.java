@@ -56,6 +56,11 @@ public final class ConversationReply {
         return new ConversationReply("", Source.SILENCE, null);
     }
 
+    /** 返事をせずに、無視する。理由の種類だけを記録に残す（発言の本文は持たない）。 */
+    public static ConversationReply ignored(ViolationKind kind) {
+        return new ConversationReply("", Source.SILENCE, kind);
+    }
+
     public String getText() {
         return text;
     }

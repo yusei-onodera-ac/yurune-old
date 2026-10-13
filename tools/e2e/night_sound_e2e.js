@@ -297,6 +297,16 @@ function measure(samples, rate) {
     const settled = await page.evaluate(`window.yuruneNightSound.status().gain`);
     check('the level rises over time, not in one step', early < 0.05 && soon > early && soon < 0.15, `t0=${early} t2s=${soon}`);
     check('the level settles at the volume (40% of 0.6 = 0.24)', Math.abs(settled - 0.24) < 0.01, `gain=${settled}`);
+    // 声を聞いている間は、環境音を下げる（会話の画面が呼ぶ）。下げるのは早く、戻すのは、ゆっくり
+    await page.evaluate(`window.yuruneNightSound.setDuck(0.2)`);
+    await sleep(1700);
+    const ducked = await page.evaluate(`window.yuruneNightSound.status().gain`);
+    check('ducking lowers the level quickly to 0.2 of the volume (0.24 * 0.2 = 0.048)', Math.abs(ducked - 0.048) < 0.01, `gain=${ducked}`);
+    await page.evaluate(`window.yuruneNightSound.setDuck(1)`);
+    await sleep(1500);
+    const returning = await page.evaluate(`window.yuruneNightSound.status().gain`);
+    check('the level comes back slowly, not in one step, and never above the volume', returning > ducked && returning < 0.12 && returning <= 0.241, `gain=${returning}`);
+    check('after the slow return the level is the volume again', await page.waitFor('Math.abs(window.yuruneNightSound.status().gain - 0.24) < 0.01', 14000));
     console.log('screenshot: ' + await page.screenshot('night_sound_playing.png'));
 
     // (4) 波形。ブラウザの同じ部品を、30 秒ぶん描画して測る
