@@ -1,0 +1,22 @@
+# ビルドの出力
+target/
+*.class
+*.war
+
+# Eclipse
+.settings/
+.classpath
+.project
+
+# ログ、依存パッケージ
+*.log
+node_modules/
+
+# 鍵や環境ごとの設定は、置かない
+.env
+.env.*
+*.pem
+*.key
+
+# 紹介ページの確認用に作るファイル（画像を埋め込んだ 1 枚）
+lp/artifact.html

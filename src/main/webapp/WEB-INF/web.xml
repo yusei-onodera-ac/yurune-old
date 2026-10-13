@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+
+  <display-name>yurune</display-name>
+
+  <!-- フィルターの順番は、ここで決める。上から順に通る。
+       1) トレース ID と、リクエストの記録  2) セキュリティヘッダー（エラー画面にも付く）  3) CSRF トークンの照合  4) ログインの確認 -->
+  <filter>
+    <filter-name>traceFilter</filter-name>
+    <filter-class>app.yurune.filter.TraceFilter</filter-class>
+  </filter>
+  <filter-mapping>
+    <filter-name>traceFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+
+  <filter>
+    <filter-name>securityHeadersFilter</filter-name>
+    <filter-class>app.yurune.filter.SecurityHeadersFilter</filter-class>
+  </filter>
+  <filter-mapping>
+    <filter-name>securityHeadersFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+    <dispatcher>ERROR</dispatcher>
+  </filter-mapping>
+
+  <filter>
+    <filter-name>csrfFilter</filter-name>
+    <filter-class>app.yurune.filter.CsrfFilter</filter-class>
+  </filter>
+  <filter-mapping>
+    <filter-name>csrfFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+
+  <filter>
+    <filter-name>authFilter</filter-name>
+    <filter-class>app.yurune.filter.AuthFilter</filter-class>
+  </filter>
+  <filter-mapping>
+    <filter-name>authFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+
+  <!-- 夜の間は、端末が一定の間隔で観測を送り続けるので、操作がなくても切れない。URL にセッション ID を出さない -->
+  <session-config>
+    <session-timeout>60</session-timeout>
+    <tracking-mode>COOKIE</tracking-mode>
+  </session-config>
+
+  <!-- 内部のエラーの内容（例外、サーバーの種類）を、画面に出さない -->
+  <error-page>
+    <exception-type>java.lang.Throwable</exception-type>
+    <location>/WEB-INF/views/error.jsp</location>
+  </error-page>
+  <error-page>
+    <error-code>400</error-code>
+    <location>/WEB-INF/views/error.jsp</location>
+  </error-page>
+  <error-page>
+    <error-code>403</error-code>
+    <location>/WEB-INF/views/error.jsp</location>
+  </error-page>
+  <error-page>
+    <error-code>404</error-code>
+    <location>/WEB-INF/views/error.jsp</location>
+  </error-page>
+  <error-page>
+    <error-code>405</error-code>
+    <location>/WEB-INF/views/error.jsp</location>
+  </error-page>
+  <error-page>
+    <error-code>500</error-code>
+    <location>/WEB-INF/views/error.jsp</location>
+  </error-page>
+
+  <!-- ホーム画面に追加するためのマニフェスト。Tomcat の既定には、この拡張子の定義がなく、型を付けずに返してしまう -->
+  <mime-mapping>
+    <extension>webmanifest</extension>
+    <mime-type>application/manifest+json</mime-type>
+  </mime-mapping>
+</web-app>

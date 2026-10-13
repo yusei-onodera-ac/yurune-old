@@ -1,0 +1,202 @@
+/* 画面の共通ルール:
+   1 昼の画面は 上の細い行 → 大見出し → ぽてねの行 → 本文 → 主操作(下に1つ) → タブバー の順
+   2 文字は1書体。見出し24 / 本文15 / 補足12。角丸は 部品14・ボタン12 の2種だけ
+   3 色は 地・面・文字・補足・罫線・アクセント1色。ぽてねの頬だけがピンク
+   4 夜の画面だけ、暗い専用の見た目 */
+:root{
+  --font:"Noto Sans JP","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --page:#E4E8EA;
+  --bg:#F2F4F4;
+  --surface:#FFFFFF;
+  --ink:#1D2326;
+  --sub:#69757B;
+  --line:#E2E7E8;
+  --accent:#2E8C87;
+  --accent-ink:#FFFFFF;
+  --accent-soft:#DDEFED;
+  --shadow:#C9D4D3;
+  --zz:#8DA09E;
+  --n-bg:#0A0E11;
+  --n-ink:#8C9AA3;
+  --n-dim:#46535B;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --page:#0D1114;--bg:#12171B;--surface:#1B2227;--ink:#E6EBEE;--sub:#97A3AB;--line:#2A333A;
+    --accent:#4BB3AC;--accent-ink:#06201E;--accent-soft:#1D3836;--shadow:#0C1214;--zz:#9FB4B1;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --page:#0D1114;--bg:#12171B;--surface:#1B2227;--ink:#E6EBEE;--sub:#97A3AB;--line:#2A333A;
+  --accent:#4BB3AC;--accent-ink:#06201E;--accent-soft:#1D3836;--shadow:#0C1214;--zz:#9FB4B1;color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--page);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.6;word-break:auto-phrase}
+body.night{background:var(--n-bg)}
+a{color:inherit;text-decoration:none}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* 画面全体。幅の狭い端末では全面、広い画面では中央に細く置く */
+.app{position:relative;display:flex;flex-direction:column;height:100%;height:100dvh;max-width:480px;margin:0 auto;background:var(--bg);overflow:hidden}
+.app.night{background:var(--n-bg);color:var(--n-ink);--zz:#8C9AA3;--shadow:#05080A}
+
+/* 共通部品 */
+.top{height:44px;padding:14px 20px 0;font-size:.875rem;color:var(--accent);flex:none}
+.title{margin:0;padding:0 20px 10px;font-size:1.5rem;font-weight:700;line-height:1.3;flex:none}
+.body{flex:1;min-height:0;overflow-y:auto;padding:4px 16px 16px;display:flex;flex-direction:column;gap:16px}
+.body>*{flex-shrink:0}
+.sect{display:flex;flex-direction:column;gap:6px}
+.sect>h3{margin:0;padding:0 4px;font-size:.75rem;font-weight:500;color:var(--sub)}
+.sect>p{margin:0;padding:0 4px;font-size:.75rem;color:var(--sub);line-height:1.55}
+.group{background:var(--surface);border-radius:14px;overflow:hidden}
+.row{display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:48px;border-top:1px solid var(--line);font-size:.9375rem;width:100%;background:none;border-left:0;border-right:0;border-bottom:0;color:var(--ink);font-family:inherit;text-align:left;position:relative}
+.row:first-child{border-top:0}
+button.row,label.row{cursor:pointer}
+.row .t{flex:1;min-width:0}
+.row .t small{display:block;color:var(--sub);font-size:.75rem;line-height:1.5}
+.row .v{color:var(--sub);font-variant-numeric:tabular-nums;white-space:nowrap}
+.row .v.ch::after{content:"›";margin-left:8px}
+.row input[type=time]{font:inherit;color:var(--ink);background:var(--bg);border:0;border-radius:10px;padding:5px 9px;font-variant-numeric:tabular-nums}
+.radio input{position:absolute;opacity:0;pointer-events:none}
+.radio .k{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--sub);flex:none}
+.radio input:checked+.k{border:6px solid var(--accent)}
+.radio input:focus-visible+.k{outline:2px solid var(--accent);outline-offset:2px}
+.tag{display:inline-block;font-size:.6875rem;line-height:1.6;font-weight:700;padding:0 8px;border-radius:6px;background:var(--accent-soft);color:var(--accent);white-space:nowrap;vertical-align:1px}
+.tag.mute{background:var(--bg);color:var(--sub)}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);text-align:center}
+.stats div{padding:14px 4px;border-left:1px solid var(--line)}
+.stats div:first-child{border-left:0}
+.stats b{display:block;font-size:1.375rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.stats span{font-size:.75rem;color:var(--sub)}
+.gain{color:var(--accent);font-weight:700}
+
+/* 切り替え(週・ノート・目標、朝の気分と答え) */
+.seg{display:grid;gap:2px;background:var(--bg);border-radius:10px;padding:3px;margin:10px 12px}
+.seg.c5{grid-template-columns:repeat(5,1fr)}
+.seg.c3{grid-template-columns:repeat(3,1fr)}
+.seg.c2{grid-template-columns:repeat(2,1fr)}
+.seg button,.seg label span{display:block;font:inherit;font-size:.8125rem;text-align:center;border:0;background:none;color:var(--ink);border-radius:8px;padding:8px 0;cursor:pointer}
+.seg button[aria-pressed="true"],.seg input:checked+span{background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.2);font-weight:700}
+.seg label{position:relative;display:block}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.fbody{display:flex;flex-direction:column;gap:16px}
+.fbody>*{flex-shrink:0}
+
+/* 朝のひとこと */
+.sheetbg{position:absolute;inset:0;background:rgba(10,14,16,.45);display:flex;align-items:flex-end;z-index:5}
+.sheet{width:100%;background:var(--surface);border-radius:22px 22px 0 0;padding:16px 16px 18px;display:flex;flex-direction:column;gap:10px;max-height:94%;overflow-y:auto}
+.sh-top{display:flex;gap:12px;align-items:center}
+.say2{font-size:.9375rem;line-height:1.55}
+.chip{display:inline-block;position:relative}
+.chip input{position:absolute;opacity:0;pointer-events:none}
+.chip span{display:block;font-size:.875rem;padding:8px 18px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.chip input:checked+span{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chip input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.sheet .seg{margin:0}
+.sh-fix{display:flex;gap:8px}
+.sh-times{display:flex;align-items:center;gap:10px}
+.sh-times input{font:inherit;background:var(--bg);color:var(--ink);border:0;border-radius:10px;padding:8px 10px;font-variant-numeric:tabular-nums}
+.sh-q{font-size:.75rem;color:var(--sub);margin-top:2px}
+.linkq{font:inherit;font-size:.875rem;color:var(--sub);background:none;border:0;padding:4px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.sh-note{font-size:.6875rem;color:var(--sub);margin:0;text-align:center;line-height:1.5}
+.toast{position:absolute;top:56px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:12px;font-size:.8125rem;z-index:6;white-space:nowrap}
+.dayitem+.dayitem{border-top:1px solid var(--line)}
+.dayitem .dayedit .row{background:var(--bg)}
+.dayitem form{margin:0}
+
+/* スイッチ */
+.sw{width:46px;height:28px;border-radius:999px;border:0;background:var(--line);position:relative;cursor:pointer;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .15s}
+.sw[aria-checked="true"]{background:var(--accent)}
+.sw[aria-checked="true"]::after{transform:translateX(18px)}
+
+.notice{font-size:.6875rem;color:var(--sub);text-align:center;margin:0;line-height:1.55}
+.action{padding:10px 16px 12px;flex:none}
+.btn{display:block;text-align:center;font:inherit;font-weight:700;font-size:1rem;background:var(--accent);color:var(--accent-ink);border:0;border-radius:12px;padding:14px;width:100%;cursor:pointer}
+.btn:active{opacity:.85}
+.tabbar{display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);border-top:1px solid var(--line);padding:8px 4px calc(14px + env(safe-area-inset-bottom,0px));flex:none}
+.tabbar a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.6875rem;color:var(--sub)}
+.tabbar a[data-on]{color:var(--accent);font-weight:700}
+.tabbar svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tl .row{align-items:flex-start;flex-direction:column;gap:2px}
+
+/* ぽてねの行（昼の画面すべてで同じ） */
+.pr{display:flex;gap:12px;align-items:center}
+.pr .say{flex:1;background:var(--surface);border-radius:14px 14px 14px 4px;padding:10px 14px;font-size:.9375rem;line-height:1.55}
+.potwrap{position:relative;display:inline-block;background:none;border:0;padding:0;cursor:pointer;line-height:0;flex:none}
+.pot{display:block;overflow:visible}
+.pot *{transform-box:fill-box}
+.pot .hopg{transform-origin:50% 100%}
+.pot .bodyg{transform-origin:50% 100%;animation:breathe 4.2s ease-in-out infinite}
+.pot.m-closed .bodyg{animation-duration:6.8s}
+.pot .sh{transform-origin:50% 50%;animation:shade 4.2s ease-in-out infinite}
+.pot .eyes{transform-origin:50% 50%;animation:blink 5.5s infinite}
+.pot .arm{animation:sway 4.2s ease-in-out infinite}
+.pot .arm.r{animation-delay:-1.4s}
+.pot .e-open,.pot .e-smile,.pot .e-closed{display:none}
+.pot.m-open .e-open,.pot.m-smile .e-smile,.pot.m-closed .e-closed{display:inline}
+.pot.m-smile .eyes,.pot.m-closed .eyes{animation:none}
+.pot .zz{opacity:0;font-weight:700;font-size:11px;fill:var(--zz)}
+.pot.m-closed .zz{animation:zz 4.5s ease-in infinite}
+.pot.m-closed .zz.b{animation-delay:1.5s}
+.pot.m-closed .zz.c{animation-delay:3s}
+.pot .mouth{transform-origin:50% 0}
+.pot.talk .mouth{animation:talk .36s ease-in-out infinite}
+.pot.hop .hopg{animation:hop .6s cubic-bezier(.3,.7,.4,1)}
+@keyframes breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(1.035,.965)}}
+@keyframes shade{0%,100%{transform:scaleX(1)}50%{transform:scaleX(1.06)}}
+@keyframes blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.08)}}
+@keyframes sway{0%,100%{transform:rotate(0)}50%{transform:rotate(7deg)}}
+@keyframes zz{0%{opacity:0;transform:translate(0,6px)}25%{opacity:.9}100%{opacity:0;transform:translate(10px,-18px)}}
+@keyframes talk{0%,100%{transform:scaleY(1)}50%{transform:scaleY(2.4)}}
+@keyframes hop{0%{transform:translateY(0) scale(1,1)}25%{transform:translateY(2px) scale(1.08,.9)}55%{transform:translateY(-12px) scale(.96,1.06)}80%{transform:translateY(0) scale(1.05,.95)}100%{transform:translateY(0) scale(1,1)}}
+.heart{position:absolute;left:50%;top:10%;font-size:16px;color:#F0A9B6;pointer-events:none;animation:heart 1s ease-out forwards}
+@keyframes heart{0%{opacity:0;transform:translate(-50%,6px) scale(.6)}20%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--dx)),-40px) scale(1.1)}}
+
+/* 夜の画面（専用） */
+.nightmid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center}
+.nightmid .potdim{opacity:.55;margin-bottom:6px}
+.clock{font-size:3.25rem;font-weight:500;color:var(--n-ink);font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.nightsub{font-size:.875rem;color:var(--n-dim)}
+.endbtn{display:inline-block;font:inherit;color:var(--n-ink);background:none;border:1px solid var(--n-dim);border-radius:12px;padding:12px 40px;margin-top:30px;cursor:pointer}
+.nightlinkrow{text-align:center;padding-bottom:6px;margin:0}
+.nightmid form{margin:0}
+.nightlink{font:inherit;font-size:.875rem;color:var(--n-ink);background:none;border:0;border-bottom:1px solid var(--n-dim);padding:4px 2px;cursor:pointer}
+.soundstate{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:.75rem;color:var(--n-dim);margin:0}
+.night .notice{color:var(--n-dim);padding:0 20px 24px}
+.night .body{padding-top:8px}
+.chat{display:flex;flex-direction:column;gap:12px;padding:8px 2px}
+.msg{display:flex;max-width:88%}
+/* 会話の画面は、ぽてねの最新の返事を、暗く小さく、1 つだけ出す */
+.chat .msg{align-self:center;justify-content:center;max-width:92%}
+.chat .bub{background:none;border-radius:0;padding:6px 10px;color:var(--n-dim);font-size:.875rem;text-align:center}
+.msg.me{align-self:flex-end}
+.bub{padding:10px 14px;border-radius:14px 14px 14px 4px;background:#26343B;color:#D5DEE3;font-size:.9375rem;line-height:1.55}
+.msg.me .bub{background:#1E4B49;color:#D6EFEC;border-radius:14px 14px 4px 14px}
+.chead{display:flex;flex-direction:column;align-items:center;gap:2px;padding:20px 0 2px}
+.chead small{color:var(--n-dim);font-size:.75rem}
+.mic{display:flex;align-items:center;gap:10px;padding:8px 16px calc(22px + env(safe-area-inset-bottom,0px))}
+.mic .field{flex:1;background:#141B20;border-radius:12px;padding:11px 16px;color:var(--n-dim);font-size:.9375rem}
+.mic .m{width:44px;height:44px;border-radius:12px;background:#1E4B49;display:grid;place-items:center;border:0;padding:0;cursor:pointer}
+.mic .m.on{box-shadow:0 0 0 3px #2C5F5C}
+.mic .m[aria-pressed="false"]{background:#252E34}
+.mic .m[aria-pressed="false"] svg{opacity:.55}
+@media (prefers-reduced-motion:reduce){
+  .pot *,.sw::after,.heart{animation:none!important;transition:none!important}
+}
+
+/* 登録・ログイン・データを消す、の画面 */
+.row input[type=email],.row input[type=password]{flex:1;min-width:0;font:inherit;color:var(--ink);background:var(--bg);border:0;border-radius:10px;padding:10px 12px}
+.row>span.t{flex:none;width:7.5em;color:var(--sub);font-size:.8125rem}
+.authmsg{margin:0;padding:12px 16px;border-radius:14px;background:var(--accent-soft);color:var(--ink);font-size:.875rem;line-height:1.6}
+a.inline{text-decoration:underline;text-underline-offset:3px;color:var(--accent)}
+
+/* 設定の、スイッチと選択肢（音量の上限、ぽてねの声） */
+.row>form{margin:0;display:flex}
+.sw:disabled{opacity:.6;cursor:default}
+button.radio[aria-current="true"] .k{border:6px solid var(--accent)}
