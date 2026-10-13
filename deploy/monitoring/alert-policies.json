@@ -1,5 +1,5 @@
 {
-  "_comment": "アラートポリシーとアップタイムの確認の定義。独自の形。deploy/apply-monitoring.ps1 が、log-metrics.json のメトリクスと、/ready のアップタイムの確認を先に作ってから、Cloud Monitoring の API で、アラートポリシーに変換して作る。「5 分間に N 件より多い」の規則は、5 分ごとの件数（ALIGN_SUM、alignmentPeriodSeconds 300）が、しきい値を超えたら働く。しきい値はすべて仮置き（根拠なし。実際の負荷で計測してから調整する）。通知先（notificationChannels）は空欄のまま（ユーザーが決める。ここでは作らない）。",
+  "_comment": "アラートポリシーとアップタイムの確認の定義。独自の形。deploy/apply-monitoring.ps1 が、log-metrics.json のメトリクスと、/ready のアップタイムの確認を先に作ってから、Cloud Monitoring の API で、アラートポリシーに変換して作る。残したのは、5xx、LLM の失敗、/ready の死活の 3 つだけ。遅延（p95）、遮断器、守りの急増のアラートは、2026-10-13 に外した（遅延は、会話の普通の使い方でも鳴る。遮断器は、開いた回数しか数えず、開いたままの長さを測れない。守りの急増は、必要と言える根拠がない）。「5 分間に N 件より多い」の規則は、5 分ごとの件数（ALIGN_SUM、alignmentPeriodSeconds 300）が、しきい値を超えたら働く。しきい値はすべて仮置き（根拠なし。実際の負荷で計測してから調整する）。通知先（メールアドレス）は、この定義には書かない。リポジトリに置かないため、apply-monitoring.ps1 の引数 -NotificationEmail で渡す。",
   "notificationChannels": [],
   "uptimeChecks": [
     {
@@ -23,28 +23,6 @@
       "alignmentPeriodSeconds": 300
     },
     {
-      "name": "request-latency-p95-high",
-      "description": "リクエストの遅延（p95）が高い（仮置き: 2000ms より遅い）。",
-      "metric": "request_latency",
-      "aligner": "ALIGN_PERCENTILE_95",
-      "reducer": "REDUCE_NONE",
-      "comparison": "COMPARISON_GT",
-      "thresholdValue": 2000,
-      "durationSeconds": 300,
-      "alignmentPeriodSeconds": 60
-    },
-    {
-      "name": "llm-breaker-open-continuity",
-      "description": "LLM のサーキットブレーカーが、開いたまま続く（仮置き: 5 分間、開のまま）。",
-      "metric": "breaker_open",
-      "aligner": "ALIGN_SUM",
-      "reducer": "REDUCE_SUM",
-      "comparison": "COMPARISON_GT",
-      "thresholdValue": 0,
-      "durationSeconds": 300,
-      "alignmentPeriodSeconds": 60
-    },
-    {
       "name": "llm-failure-rate-high",
       "description": "LLM 呼び出しの失敗が多い（仮置き: 5 分間に 10 件より多い）。",
       "metric": "llm_error",
@@ -52,17 +30,6 @@
       "reducer": "REDUCE_SUM",
       "comparison": "COMPARISON_GT",
       "thresholdValue": 10,
-      "durationSeconds": 0,
-      "alignmentPeriodSeconds": 300
-    },
-    {
-      "name": "guard-blocked-spike",
-      "description": "守り（Model Armor・自前の検査）による差し替えが、急に増える（仮置き: 5 分間に 20 件より多い）。削る順序の対象（時間が足りなければ、最初に削ってよい）。",
-      "metric": "guard_blocked",
-      "aligner": "ALIGN_SUM",
-      "reducer": "REDUCE_SUM",
-      "comparison": "COMPARISON_GT",
-      "thresholdValue": 20,
       "durationSeconds": 0,
       "alignmentPeriodSeconds": 300
     },

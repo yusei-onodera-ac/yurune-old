@@ -5,16 +5,18 @@
 
   Usage:
     gcloud auth login
-    .\deploy\apply-monitoring.ps1 -ProjectId <project-id> -ServiceHost <service-url-host>
+    .\deploy\apply-monitoring.ps1 -ProjectId <project-id> -ServiceHost <service-url-host> [-NotificationEmail <address>]
     (ServiceHost is the Cloud Run service's hostname, e.g. the host part of 'gcloud run services describe ... --format value(status.url)')
 
   What it does, in order:
     1 create (or update) each log-based metric in deploy/monitoring/log-metrics.json
     2 create the uptime check for /ready (deploy/monitoring/alert-policies.json, uptimeChecks), unless it exists
-    3 create each alert policy in deploy/monitoring/alert-policies.json (an existing policy with the same name is
-      replaced). Notification channels are left empty: the user adds them later in the Cloud Console, because this
-      script does not decide who gets paged.
-    4 create the dashboard in deploy/monitoring/dashboard.json (an existing one with the same name is replaced)
+    3 when -NotificationEmail is given, create (or update) one email notification channel named yurune-alert-email.
+      The address is passed here and not written in the definition files, so it never reaches the repository.
+      Without it, the alert policies have no notification channel and tell nobody.
+    4 create each alert policy in deploy/monitoring/alert-policies.json (an existing policy with the same name is
+      replaced) and attach the channel from step 3. Policies that are no longer in the file are NOT deleted.
+    5 create the dashboard in deploy/monitoring/dashboard.json (an existing one with the same name is replaced)
 
   It calls the Cloud Logging and Cloud Monitoring REST APIs with your gcloud access token. gcloud commands with
   quoted filters were avoided on purpose: Windows PowerShell 5.1 passes double quotes to native commands in a broken form.
@@ -23,7 +25,8 @@
 #>
 param(
     [Parameter(Mandatory = $true)][string]$ProjectId,
-    [Parameter(Mandatory = $true)][string]$ServiceHost
+    [Parameter(Mandatory = $true)][string]$ServiceHost,
+    [string]$NotificationEmail = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -133,7 +136,35 @@ foreach ($check in $alertConfig.uptimeChecks) {
     Write-Host "Uptime check created: $($check.name) ($($checkIds[$check.name]))"
 }
 
-# 3 alert policies (thresholds are placeholders; see the _comment field in alert-policies.json)
+# 3 notification channel (email). Reused when one with the same name exists; its address is updated when it differs.
+$channelNames = @()
+if (-not [string]::IsNullOrWhiteSpace($NotificationEmail)) {
+    $channelDisplayName = 'yurune-alert-email'
+    $channelList = Invoke-Api 'GET' "$monitoringBase/notificationChannels" $null
+    $channel = $null
+    if ($channelList.notificationChannels) {
+        $channel = @($channelList.notificationChannels) | Where-Object { $_.displayName -eq $channelDisplayName } | Select-Object -First 1
+    }
+    if ($channel) {
+        if ($channel.labels.email_address -ne $NotificationEmail) {
+            Invoke-Api 'PATCH' "https://monitoring.googleapis.com/v3/$($channel.name)?updateMask=labels" @{ labels = @{ email_address = $NotificationEmail } } | Out-Null
+            Write-Host "Notification channel updated: $channelDisplayName"
+        }
+        else {
+            Write-Host "Notification channel exists: $channelDisplayName"
+        }
+    }
+    else {
+        $channel = Invoke-Api 'POST' "$monitoringBase/notificationChannels" @{ type = 'email'; displayName = $channelDisplayName; labels = @{ email_address = $NotificationEmail }; enabled = $true }
+        Write-Host "Notification channel created: $channelDisplayName (verification: $($channel.verificationStatus))"
+    }
+    $channelNames = @($channel.name)
+}
+else {
+    Write-Host 'No -NotificationEmail given: the alert policies will have no notification channel.'
+}
+
+# 4 alert policies (thresholds are placeholders; see the _comment field in alert-policies.json)
 $existingPolicies = @()
 $policyList = Invoke-Api 'GET' "$monitoringBase/alertPolicies" $null
 if ($policyList.alertPolicies) { $existingPolicies = @($policyList.alertPolicies) }
@@ -165,7 +196,7 @@ foreach ($policy in $alertConfig.policies) {
         combiner             = 'OR'
         enabled              = $true
         conditions           = @($condition)
-        notificationChannels = @()
+        notificationChannels = $channelNames
     }
     foreach ($old in ($existingPolicies | Where-Object { $_.displayName -eq $policy.name })) {
         Invoke-Api 'DELETE' "https://monitoring.googleapis.com/v3/$($old.name)" $null | Out-Null
@@ -174,7 +205,7 @@ foreach ($policy in $alertConfig.policies) {
     Write-Host "Alert policy created: $($policy.name) (placeholder threshold, not measured)"
 }
 
-# 4 dashboard: one line chart per widget; a distribution metric shows p50 and p95, a count metric shows the count per minute
+# 5 dashboard: one line chart per widget; a distribution metric shows p50 and p95, a count metric shows the count per minute
 $metricByName = @{}
 foreach ($metric in $metricsConfig.metrics) { $metricByName[$metric.name] = $metric }
 $tiles = @()
@@ -215,4 +246,5 @@ if ($dashboardList.dashboards) {
 Invoke-Api 'POST' "$dashboardBase/dashboards" $dashboardBody | Out-Null
 Write-Host "Dashboard created: $($dashboardConfig.displayName)"
 
-Write-Host 'Done. Notification channels are empty: add them in the Cloud Console to be told when an alert fires.'
+if ($channelNames.Count -eq 0) { Write-Host 'Done. No notification channel: add one in the Cloud Console, or run again with -NotificationEmail, to be told when an alert fires.' }
+else { Write-Host 'Done.' }

@@ -95,7 +95,7 @@ class MonitoringConfigPolicyTest {
         JsonObject alertConfig = readJson("deploy/monitoring/alert-policies.json");
 
         assertTrue(alertConfig.getAsJsonArray("notificationChannels").isEmpty(),
-                "通知先は、ユーザーが決める（ここでは作らない）");
+                "通知先（メールアドレス）は、定義に書かない（リポジトリに置かず、スクリプトの引数で渡す）");
     }
 
     @Test

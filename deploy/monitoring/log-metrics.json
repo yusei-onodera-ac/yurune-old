@@ -27,7 +27,7 @@
     },
     {
       "name": "llm_latency",
-      "description": "LLM 呼び出し 1 回あたりの時間の分布（ミリ秒）。p95 のアラートが参照する。",
+      "description": "LLM 呼び出し 1 回あたりの時間の分布（ミリ秒）。ダッシュボードで見る。",
       "event": "llm",
       "fields": ["latencyMs"],
       "filter": "resource.type=\"cloud_run_revision\" AND jsonPayload.event=\"llm\"",
@@ -50,7 +50,7 @@
     },
     {
       "name": "breaker_open",
-      "description": "LLM のサーキットブレーカーが開いた件数（state の変化を数える。継続のアラートが使う）。",
+      "description": "LLM のサーキットブレーカーが開いた件数（state の変化を数えるので、開いたままの長さは測れない）。ダッシュボードで見る。",
       "event": "control",
       "fields": ["kind", "state"],
       "filter": "resource.type=\"cloud_run_revision\" AND jsonPayload.event=\"control\" AND jsonPayload.detail.kind=\"llm_breaker\" AND jsonPayload.detail.state=\"open\"",
@@ -68,7 +68,7 @@
     },
     {
       "name": "request_latency",
-      "description": "リクエスト 1 回あたりの時間の分布（ミリ秒）。p95 のアラートが参照する。",
+      "description": "リクエスト 1 回あたりの時間の分布（ミリ秒）。ダッシュボードで見る。",
       "event": "request",
       "fields": ["latencyMs"],
       "filter": "resource.type=\"cloud_run_revision\" AND jsonPayload.event=\"request\"",
