@@ -158,6 +158,9 @@ async function main() {
   const talking = session.waitForLoad();
   await session.evaluate(`document.querySelector('form[action$="/night/mode"] .nightlink').click()`);
   await talking;
+  // The device allows no sound after a page change until one touch; the real screen asks for it. One touch, as a user does, then shoot.
+  await session.evaluate(`(() => { const start = document.getElementById('soundStart'); if (start) { start.click(); } })()`);
+  await sleep(SOUND_RAMP_MS);
   await session.saveScreen('talk');
 
   chrome.kill();
