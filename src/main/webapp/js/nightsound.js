@@ -11,6 +11,8 @@
   var END_PATH = '/night/end';
   var EVENT_STATE = 'yurune:night-state';
   var EVENT_FADE = 'yurune:night-fade';
+  /* 鳴らせる状態が変わったときに出す。会話の画面が、「画面にさわってね」の案内を出し入れするため */
+  var EVENT_VIEW = 'yurune:sound-view';
   var RENDER_RATE = 48000;
 
   /* 100% のときの出力。ピークを小さく保つため、1 よりずっと小さくする */
@@ -103,7 +105,7 @@
   var audioElement = null;
   /* ぽてねの声（会話の返事）を流す先。環境音と同じ出力にそろえる（audio 要素経由か、直の出力か） */
   var voiceOutput = null;
-  /* 出力先を決めている最中の Promise。「音を流す」は、タップ（pointerdown）とボタンの click の、
+  /* 出力先を決めている最中の Promise。「音を流す」は、タップ（touchend）とボタンの click の、
      2 つから呼ばれうる。決め終わる前に 2 度目が来ても、同じ Promise を待たせ、master を 2 度作らない */
   var outputReady = null;
   /* Wake Lock（画面をつけたままにする）。設定がオンで、鳴っている間だけ求める */
@@ -507,7 +509,7 @@
 
   /* 音を流し始める。端末が許したときだけ、鳴る（resume の結果で決まる）。
      はじめての呼び出しでだけ、出力先（audio 要素か、直の出力か）を決める。
-     決めている途中に、もう一度呼ばれても（pointerdown とボタンの click の、両方から来ることがある）、
+     決めている途中に、もう一度呼ばれても（touchend とボタンの click の、両方から来ることがある）、
      同じ Promise を待つだけにする（master が整う前に begin() が走ってしまわないように） */
   function startSound() {
     if (unsupported) {
@@ -651,6 +653,7 @@
     if (startButton) {
       startButton.hidden = playing || unsupported;
     }
+    document.dispatchEvent(new CustomEvent(EVENT_VIEW));
   }
 
   function onGesture() {
@@ -677,9 +680,10 @@
     if (startButton) {
       startButton.addEventListener('click', resumeSound);
     }
-    /* 端末は、指が触れた瞬間（pointerdown・touchstart）ではなく、離したとき（pointerup・touchend・click）を、
-       「操作」と認めることがある。どれでも、鳴らし始める */
-    ['pointerdown', 'pointerup', 'click', 'keydown', 'touchstart', 'touchend'].forEach(function (name) {
+    /* iPhone の Safari が再生を許す「操作」は、指を離したとき（touchend）、click、keydown だけ（WebKit の公式記事）。
+       触れた瞬間（pointerdown・touchstart）や pointerup で始めると、audio 要素の再生が拒まれ、出力先が直の出力に決まってしまう
+       （決めるのは 1 回だけ。直の出力は、マナーモードの無音スイッチで消される）。だから、この 3 つのときだけ始める */
+    ['touchend', 'click', 'keydown'].forEach(function (name) {
       document.addEventListener(name, onGesture, { passive: true });
     });
     document.addEventListener(EVENT_STATE, function (event) {
@@ -795,6 +799,7 @@
       contextState: context ? context.state : null,
       gain: master ? master.gain.value : null,
       usingMediaElement: usingMediaElement,
+      mediaElementPaused: audioElement ? audioElement.paused : null,
       wakeLockPreferred: wakeLockPreferred,
       wakeLockActive: !!wakeLockSentinel
     };
@@ -805,6 +810,7 @@
   window.yuruneNightSound = {
     playVoice: playVoice,
     setDuck: setDuck,
+    reviveOutput: reviveMediaElementIfNeeded,
     renderTrack: renderTrack,
     status: status,
     simulateMediaSessionPause: pauseSound,

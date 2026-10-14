@@ -131,8 +131,15 @@ class PwaDeliveryTest {
     }
 
     @Test
-    void staticAssetsAndIconsKeepTheUnspecifiedCacheControl() throws IOException, ServletException {
-        for (String path : concat(List.of("/css/yurune.css", "/js/yurune.js"), ICON_FILES)) {
+    void theStylesAndScriptsMustBeRevalidatedSoAnOldCopyDoesNotMeetANewScreen() throws IOException, ServletException {
+        for (String path : List.of("/css/yurune.css", "/js/yurune.js", "/js/nightsound.js")) {
+            assertEquals("no-cache", pass(path, headersFilter).responseHeaders.get("Cache-Control"), path);
+        }
+    }
+
+    @Test
+    void iconsKeepTheUnspecifiedCacheControl() throws IOException, ServletException {
+        for (String path : ICON_FILES) {
             assertNull(pass(path, headersFilter).responseHeaders.get("Cache-Control"), path);
         }
     }

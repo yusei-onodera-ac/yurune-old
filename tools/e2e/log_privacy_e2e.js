@@ -127,7 +127,7 @@ async function dumpAllDocuments(path = '') {
   await ev(`document.querySelector('#action button').click()`); await waitLoad();
   await go('/night');
   if ((await ev(`!!document.querySelector('.endbtn')`)) === true) { await ev(`document.querySelector('.endbtn').click()`); await waitLoad(); }
-  else if ((await ev(`!!document.getElementById('micButton')`)) === true) { await ev(`document.querySelector('form[action$="/night/mode"] .nightlink').click()`); await waitLoad(); await ev(`document.querySelector('.endbtn').click()`); await waitLoad(); }
+  else if ((await ev(`!!document.getElementById('micButton')`)) === true) { await ev(`document.querySelector('form[action$="/night/mode"] .hangup').click()`); await waitLoad(); await ev(`document.querySelector('.endbtn').click()`); await waitLoad(); }
 
   // 夜を会話で始めて、固有の文を話す
   await go('/prepare');
@@ -139,7 +139,7 @@ async function dumpAllDocuments(path = '') {
   check('the conversation really happened (replies came back)', replies.every((r) => typeof r === 'string' && r.length > 0), JSON.stringify(replies).slice(0, 160));
 
   // 終える
-  await ev(`document.querySelector('form[action$="/night/mode"] .nightlink').click()`); await waitLoad();
+  await ev(`document.querySelector('form[action$="/night/mode"] .hangup').click()`); await waitLoad();
   await ev(`document.querySelector('.endbtn').click()`); await waitLoad();
   await sleep(500);
 

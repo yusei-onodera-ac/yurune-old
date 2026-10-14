@@ -32,14 +32,20 @@
   var TEXT_HINT_LISTENING = '聞いています…';
   var TEXT_HINT_REPLYING = 'ぽてねの番だよ';
   var TEXT_HINT_TAP = '画面にさわると、ぽてねの声が出るよ';
+  /* 端末は、画面を読み込み直すたびに、一度さわるまで、音を鳴らさせない（特に iPhone の Safari） */
+  var TEXT_HINT_UNLOCK = '画面にさわると、音とぽてねの声が出るよ';
   var TEXT_HINT_PAUSED = 'お休み中。押すと、また聞くよ';
   var TEXT_HINT_BLOCKED = 'マイクが使えません。押すと、もう一度ためします';
   var TEXT_HINT_MISSED = '聞き取れませんでした';
   var TEXT_HINT_UNSUPPORTED = 'この端末では、声の入力が使えません';
   var TEXT_MIC_PAUSE = '聞くのをお休みする';
   var TEXT_MIC_RESUME = 'また聞く';
+  var TEXT_MIC_LABEL_OFF = 'マイクをオフ';
+  var TEXT_MIC_LABEL_ON = 'マイクをオン';
   var MS_PER_SECOND = 1000;
   var MS_PER_MINUTE = 60000;
+  var SECONDS_PER_MINUTE = 60;
+  var MINUTES_PER_HOUR = 60;
   var PERCENT_MAX = 100;
   /* 夜の画面が上限を渡せなかったときに使う、仕様書の初期値（60%）。大きくしない側に倒す */
   var VOLUME_CAP_FALLBACK = 0.6;
@@ -172,6 +178,16 @@
   var NIGHT_FADE_EVENT = 'yurune:night-fade';
   /* 声が聞こえたときの出来事。画面に触れなくても、「反応があった」と数えるため（夜の観測の画面とつながる） */
   var NIGHT_REACTION_EVENT = 'yurune:reaction';
+  /* 音の端末が、鳴らせる状態の変わったことを知らせる出来事（nightsound.js の EVENT_VIEW と同じ名前） */
+  var SOUND_VIEW_EVENT = 'yurune:sound-view';
+  /* さわったのと同じ操作で、音の端末も鳴らせるようになる。その知らせを、声を出す前に、待つ長さ */
+  var HELD_WAIT_MS = 1500;
+  /* iPhone の Safari では、音を、マナーモード（無音スイッチ）に消されない「再生」の扱いにできる。聞いている間は、端末に任せる */
+  var AUDIO_SESSION_SPEAKING = 'playback';
+  var AUDIO_SESSION_LISTENING = 'auto';
+  /* 実機で、声が出ない理由を見るための表示（?debug=1 で入り、?debug=0 で消える）。端末の中だけに出し、送らない */
+  var DEBUG_STORAGE_KEY = 'yurune.debug';
+  var DEBUG_LINES_MAX = 14;
 
   /* 夜の音量の上限（0〜1）。サーバーが、設定と運用の上限から決めて、夜の画面に渡す。端末の再生は、これをこえない */
   function readVolumeCap() {
@@ -373,6 +389,84 @@
     });
   }
 
+  /* 声が出ない理由を、端末の画面の下に出す。会話の文は入れない（状態と失敗の名前だけ）。使わないときは、何もしない関数を返す */
+  function createTrace() {
+    var enabled = false;
+    try {
+      var match = /[?&]debug=([01])/.exec(window.location.search);
+      if (match) {
+        window.localStorage.setItem(DEBUG_STORAGE_KEY, match[1]);
+      }
+      enabled = window.localStorage.getItem(DEBUG_STORAGE_KEY) === '1';
+    } catch (error) {
+      enabled = /[?&]debug=1/.test(window.location.search);
+    }
+    var host = document.querySelector('.callmain');
+    if (!enabled || !host) {
+      return function () {};
+    }
+    var panel = document.createElement('pre');
+    panel.className = 'calltrace';
+    host.appendChild(panel);
+    var lines = [];
+    function pad(value) {
+      return value < 10 ? '0' + value : String(value);
+    }
+    return function (text) {
+      var now = new Date();
+      lines.push(pad(now.getMinutes()) + ':' + pad(now.getSeconds()) + ' ' + text);
+      if (lines.length > DEBUG_LINES_MAX) {
+        lines.shift();
+      }
+      panel.textContent = lines.join('\n');
+    };
+  }
+
+  /* 音の端末の、いまの状態を 1 行にする（確認用の表示に出す） */
+  function describeSound() {
+    var sound = window.yuruneNightSound;
+    var state = sound && sound.status ? sound.status() : {};
+    var session = navigator.audioSession ? navigator.audioSession.type : 'none';
+    return 'ctx=' + state.contextState + ' out=' + (state.usingMediaElement ? 'element' : 'direct')
+      + ' elPaused=' + state.mediaElementPaused + ' session=' + session;
+  }
+
+  /* iPhone の Safari だけで、音の扱いを切り替える。Chrome などでは、何もしない（効き方が違うため） */
+  function setAudioSession(type) {
+    var agent = navigator.userAgent;
+    var webkitOnly = /AppleWebKit/.test(agent) && !/Chrome\/|Chromium\/|Edg\//.test(agent);
+    try {
+      if (webkitOnly && navigator.audioSession && navigator.audioSession.type !== type) {
+        navigator.audioSession.type = type;
+      }
+    } catch (error) {
+      /* 対応していない端末では、そのまま */
+    }
+  }
+
+  /* 通話の経過時間。1 時間をこえたら、時も出す。この画面を開いたときから数える（読み直すと、0 から） */
+  function formatElapsed(totalSeconds) {
+    function pad(value) {
+      return value < 10 ? '0' + value : String(value);
+    }
+    var minutes = Math.floor(totalSeconds / SECONDS_PER_MINUTE) % MINUTES_PER_HOUR;
+    var hours = Math.floor(totalSeconds / (SECONDS_PER_MINUTE * MINUTES_PER_HOUR));
+    var text = pad(minutes) + ':' + pad(totalSeconds % SECONDS_PER_MINUTE);
+    return hours > 0 ? hours + ':' + text : text;
+  }
+
+  /* 夜の画面（会話）。通話の画面と同じく、経過時間を出す */
+  function bindCallTimer() {
+    var timer = document.getElementById('callTime');
+    if (!timer) {
+      return;
+    }
+    var openedAt = Date.now();
+    setInterval(function () {
+      timer.textContent = formatElapsed(Math.floor((Date.now() - openedAt) / MS_PER_SECOND));
+    }, MS_PER_SECOND);
+  }
+
   /* 夜の画面（会話）。はじめのあいさつの間だけ口が動き、そのあとは、話している間だけ動く */
   function bindNightTalk() {
     var talkingPot = document.querySelector('.pot.talk');
@@ -391,9 +485,12 @@
     var chat = document.querySelector('.chat');
     var mic = document.getElementById('micButton');
     var hint = document.getElementById('micHint');
+    var micLabel = document.getElementById('micLabel');
+    var dots = document.getElementById('callDots');
     if (!config || !chat || !mic || !hint) {
       return;
     }
+    var trace = createTrace();
     var url = config.getAttribute('data-url');
     var pot = document.querySelector('.pot');
     var volumeCap = readVolumeCap();
@@ -413,6 +510,8 @@
     var pendingVoice = null;
     var restartTimer = null;
     var speakTimer = null;
+    /* 声を出せなかった返事を、さわった操作のあとに出すまでの、短い待ち */
+    var heldWait = null;
     var lastHeardAt = Date.now();
     /* 環境音を下げているか */
     var ducked = false;
@@ -438,6 +537,13 @@
       return Boolean(Recognition) && wantListening && !blocked && !busy && !speaking && !document.hidden;
     }
 
+    /* 音の端末が、まだ鳴らせる状態でない（さわる操作を待っている）。このとき、声も出せない */
+    function isAudioLocked() {
+      var sound = window.yuruneNightSound;
+      var state = sound && sound.status ? sound.status() : null;
+      return Boolean(state && state.supported && state.contextState !== 'running');
+    }
+
     /* 画面の文と、マイクの見た目は、いまの状態から決める */
     function renderHint() {
       var text = TEXT_HINT_LISTENING;
@@ -451,6 +557,8 @@
         text = TEXT_HINT_REPLYING;
       } else if (pendingVoice) {
         text = TEXT_HINT_TAP;
+      } else if (isAudioLocked()) {
+        text = TEXT_HINT_UNLOCK;
       }
       hint.textContent = text;
       mic.classList.toggle('on', Boolean(recognition));
@@ -458,6 +566,13 @@
       mic.setAttribute('aria-pressed', listening ? 'true' : 'false');
       applyDuck(listening);
       mic.setAttribute('aria-label', listening ? TEXT_MIC_PAUSE : TEXT_MIC_RESUME);
+      if (micLabel) {
+        micLabel.textContent = listening ? TEXT_MIC_LABEL_OFF : TEXT_MIC_LABEL_ON;
+      }
+      /* 点が波打つのは、いま実際に聞いているあいだだけ */
+      if (dots) {
+        dots.classList.toggle('on', Boolean(recognition));
+      }
     }
 
     function showTransient(text) {
@@ -551,6 +666,7 @@
       };
       session.onerror = function (event) {
         var error = event && event.error;
+        trace('聞き取りの失敗 ' + error);
         if (error === 'not-allowed' || error === 'service-not-allowed') {
           blocked = true;
           return;
@@ -565,12 +681,16 @@
           return;
         }
         recognition = null;
+        if (Date.now() - openedAt < TALK_RETRY_BELOW_MS) {
+          trace('聞き取りが、すぐ終わった');
+        }
         scheduleListening(Date.now() - openedAt < TALK_RETRY_BELOW_MS ? TALK_RETRY_MS : TALK_RESTART_MS);
       };
       recognition = session;
       try {
         session.start();
       } catch (error) {
+        trace('聞き取りを始められない ' + (error && error.name));
         recognition = null;
         scheduleListening(TALK_RETRY_MS);
         return;
@@ -582,6 +702,7 @@
     function beginSpeaking() {
       speaking = true;
       stopListening();
+      setAudioSession(AUDIO_SESSION_SPEAKING);
       clearTimeout(speakTimer);
       speakTimer = setTimeout(endSpeaking, TALK_SPEAK_MAX_MS);
     }
@@ -592,6 +713,7 @@
       }
       speaking = false;
       clearTimeout(speakTimer);
+      setAudioSession(AUDIO_SESSION_LISTENING);
       setTalking(false);
       lastHeardAt = Date.now();
       scheduleListening(TALK_RESTART_MS);
@@ -603,6 +725,7 @@
 
     /* どの方法でも声を出せなかったとき。返事は、吹き出しに出ている。次にさわったときに、同じ返事を声にする */
     function holdForTap(audioBase64, text) {
+      trace('声を出せなかった（さわるのを待つ） ' + describeSound());
       pendingVoice = { audio: audioBase64, text: text };
       endSpeaking();
     }
@@ -615,6 +738,7 @@
       var started = false;
       var blockedTimer = setTimeout(function () {
         if (!started) {
+          trace('ブラウザの読み上げが始まらない');
           try {
             window.speechSynthesis.cancel();
           } catch (error) {
@@ -647,22 +771,35 @@
         var audio = new Audio(URL.createObjectURL(new Blob([decodeBase64(audioBase64)], { type: 'audio/mpeg' })));
         audio.volume = volumeCap;
         audio.onplay = function () { setTalking(true); };
-        audio.onended = function () { endSpeaking(); };
-        audio.onerror = function () { setTalking(false); speakWithBrowser(text, audioBase64); };
-        audio.play().catch(function () { speakWithBrowser(text, audioBase64); });
+        /* 別の audio 要素が鳴ると、端末は、環境音の要素を止めることがある。声が終わったら、環境音を鳴らし直す */
+        audio.onended = function () { reviveAmbientSound(); endSpeaking(); };
+        audio.onerror = function () { setTalking(false); reviveAmbientSound(); speakWithBrowser(text, audioBase64); };
+        audio.play().catch(function (error) {
+          trace('audio 要素の再生を拒まれた ' + (error && error.name));
+          speakWithBrowser(text, audioBase64);
+        });
       } catch (error) {
         speakWithBrowser(text, audioBase64);
+      }
+    }
+
+    function reviveAmbientSound() {
+      var sound = window.yuruneNightSound;
+      if (sound && typeof sound.reviveOutput === 'function') {
+        sound.reviveOutput();
       }
     }
 
     /* 声は、まず、夜の環境音と同じ出力（一度さわれば鳴らせる）で流す。だめなら、audio 要素、ブラウザの読み上げの順 */
     function playServerAudio(audioBase64, text) {
       var sound = window.yuruneNightSound;
+      trace('声を流す ' + describeSound());
       if (sound && sound.playVoice) {
         try {
-          sound.playVoice(decodeBase64(audioBase64).buffer, volumeCap, function () { setTalking(true); }).then(function () {
+          sound.playVoice(decodeBase64(audioBase64).buffer, volumeCap, function () { setTalking(true); trace('声が鳴り始めた'); }).then(function () {
             endSpeaking();
-          }, function () {
+          }, function (error) {
+            trace('環境音の出力で流せない ' + (error && error.message));
             playWithElement(audioBase64, text);
           });
           return;
@@ -686,7 +823,9 @@
     }
 
     /* 声を出せなかった返事は、利用者が画面にさわったとき（その操作で、端末が再生を許す）に出す */
-    function speakHeldReply() {
+    function playHeldReply() {
+      clearTimeout(heldWait);
+      heldWait = null;
       if (!pendingVoice || speaking || busy) {
         return;
       }
@@ -698,6 +837,19 @@
       } else {
         speakWithBrowser(held.text, '');
       }
+    }
+
+    /* さわった操作で、音の端末も、鳴らせる状態になる（少し遅れて知らせが来る）。それを待ってから、環境音と同じ出力で流す。
+       先に別の出力で流すと、端末が環境音を止めてしまうことがある。知らせが来なくても、短い待ちのあとに、出せる方法で出す */
+    function speakHeldReply() {
+      if (!pendingVoice || speaking || busy || heldWait) {
+        return;
+      }
+      if (isAudioLocked()) {
+        heldWait = setTimeout(playHeldReply, HELD_WAIT_MS);
+        return;
+      }
+      playHeldReply();
     }
 
     function send(text) {
@@ -722,6 +874,7 @@
         if (result.reply) {
           showReply(result.reply);
           remember(text, result.reply);
+          trace('返事が来た 声=' + (result.audio ? 'あり' : 'なし') + ' ' + describeSound());
           speak(result);
         }
       }).catch(function () {
@@ -755,7 +908,8 @@
       }
     });
 
-    ['pointerup', 'click', 'keydown'].forEach(function (name) {
+    /* 再生が許される操作だけ（nightsound.js と同じ。iPhone の Safari は、指を離したとき・click・keydown だけを認める） */
+    ['touchend', 'click', 'keydown'].forEach(function (name) {
       document.addEventListener(name, speakHeldReply, { passive: true });
     });
 
@@ -776,6 +930,16 @@
       }
     }, TALK_IDLE_CHECK_MS);
 
+    /* 音の端末が鳴らせる状態になったら、案内を直し、待っていた声を出す */
+    document.addEventListener(SOUND_VIEW_EVENT, function () {
+      trace('音の状態 ' + describeSound());
+      renderHint();
+      if (heldWait && !isAudioLocked()) {
+        playHeldReply();
+      }
+    });
+
+    trace('開いた ' + describeSound() + ' 聞き取り=' + (Recognition ? 'あり' : 'なし'));
     renderHint();
     if (Recognition) {
       startListening();
@@ -805,6 +969,7 @@
     bindNightClock();
     bindNightObserver();
     bindNightTalk();
+    bindCallTimer();
     bindNightTalkVoice();
     registerServiceWorker();
   });

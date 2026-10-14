@@ -178,16 +178,35 @@ button.row,label.row{cursor:pointer}
 .msg.me{align-self:flex-end}
 .bub{padding:10px 14px;border-radius:14px 14px 14px 4px;background:#26343B;color:#D5DEE3;font-size:.9375rem;line-height:1.55}
 .msg.me .bub{background:#1E4B49;color:#D6EFEC;border-radius:14px 14px 4px 14px}
-.chead{display:flex;flex-direction:column;align-items:center;gap:2px;padding:20px 0 2px}
-.chead small{color:var(--n-dim);font-size:.75rem}
-.mic{display:flex;align-items:center;gap:10px;padding:8px 16px calc(22px + env(safe-area-inset-bottom,0px))}
-.mic .field{flex:1;background:#141B20;border-radius:12px;padding:11px 16px;color:var(--n-dim);font-size:.9375rem}
-.mic .m{width:44px;height:44px;border-radius:12px;background:#1E4B49;display:grid;place-items:center;border:0;padding:0;cursor:pointer}
-.mic .m.on{box-shadow:0 0 0 3px #2C5F5C}
-.mic .m[aria-pressed="false"]{background:#252E34}
-.mic .m[aria-pressed="false"] svg{opacity:.55}
+/* 夜の会話の画面。通話の画面の並び（相手の絵、名前、経過時間、操作、通話を終えるボタン）に寄せる。
+   色は、眠る前に明るすぎないよう、夜の暗さのまま（--call-* で、まとめて変えられる） */
+.call{--call-bg:#131A20;--call-face:#2D4350;--call-name:#D5DEE3;--call-sub:#7F8E98;--call-label:#9AAAB3;--call-end:#C73A4D;--call-dot-a:#4E86B3;--call-dot-b:#49A585;
+  flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;background:var(--call-bg);padding:0 16px calc(20px + env(safe-area-inset-bottom,0px))}
+.callmain{flex:1;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;padding-top:clamp(28px,9vh,84px)}
+.callface{width:136px;height:136px;border-radius:50%;background:var(--call-face);display:grid;place-items:center;flex:none}
+.callname{margin:22px 0 0;font-size:1.375rem;font-weight:700;line-height:1.3;color:var(--call-name)}
+.calltime{margin-top:2px;font-size:.875rem;color:var(--call-sub);font-variant-numeric:tabular-nums}
+.calldots{display:flex;gap:6px;margin-top:30px}
+.calldots i{width:5px;height:5px;border-radius:50%;background:var(--call-dot-a);background:color-mix(in srgb,var(--call-dot-a),var(--call-dot-b) calc(var(--i) * 12.5%));opacity:.3}
+.calldots.on i{animation:calldot 1.4s ease-in-out infinite;animation-delay:calc(var(--i) * .11s)}
+@keyframes calldot{0%,100%{opacity:.3;transform:scale(.8)}45%{opacity:1;transform:scale(1.2)}}
+.call .chat{width:100%;margin-top:18px;padding:0 2px}
+.call .chat .msg{max-width:100%}
+.callstate{display:flex;flex-direction:column;align-items:center;gap:4px;padding-bottom:20px;text-align:center}
+.callhint{font-size:.8125rem;color:var(--call-sub)}
+.callctrl{display:flex;justify-content:center;gap:28px;min-height:76px;margin-bottom:22px}
+.ctl{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:88px;padding:6px 4px;font:inherit;font-size:.6875rem;line-height:1.3;color:var(--call-label);background:none;border:0;cursor:pointer}
+.ctl .slash{display:none}
+.ctl[aria-pressed="false"] .slash{display:inline}
+.callend{display:flex;flex-direction:column;align-items:center;gap:8px;margin:0}
+/* 実機で声が出ない理由を見るための表示。?debug=1 で入ったときだけ出る */
+.calltrace{width:100%;max-height:26vh;margin:12px 0 0;overflow:auto;font:10px/1.45 ui-monospace,Menlo,Consolas,monospace;color:var(--call-sub);white-space:pre-wrap;word-break:break-all;text-align:left}
+.hangup{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;border:0;padding:0;background:var(--call-end);color:#F4E3E5;cursor:pointer}
+.hangup:active{opacity:.85}
+.callendlabel{font-size:.6875rem;color:var(--call-sub)}
 @media (prefers-reduced-motion:reduce){
   .pot *,.sw::after,.heart{animation:none!important;transition:none!important}
+  .calldots.on i{animation:none!important;opacity:.7}
 }
 
 /* 登録・ログイン・データを消す、の画面 */

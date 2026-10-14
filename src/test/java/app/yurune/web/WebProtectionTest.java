@@ -90,7 +90,7 @@ class WebProtectionTest {
     @Test
     void staticFilesMayBeCachedAndHstsIsOnlySentOverHttps() throws IOException, ServletException {
         FakeHttp.Exchange http = new FakeHttp.Exchange();
-        http.servletPath = "/css/yurune.css";
+        http.servletPath = "/images/icons/icon-192.png";
         headersFilter.doFilter(http.request(), http.response(), http.chain());
         assertNull(http.responseHeaders.get("Cache-Control"));
         assertNull(http.responseHeaders.get("Strict-Transport-Security"));

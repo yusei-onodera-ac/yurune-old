@@ -281,6 +281,11 @@ function measure(samples, rate) {
     check('sound screen starts silent and says so', idleSound.text === TEXT_IDLE && idleSound.started === false, JSON.stringify(idleSound));
     console.log('screenshot: ' + await page.screenshot('night_sound_idle.png'));
 
+    // 指が触れた瞬間（pointerdown・touchstart）や pointerup では、始めない。iPhone の Safari は、これらでは再生を許さず、
+    // 始めてしまうと出力先が直の出力に決まってしまう（マナーモードの無音スイッチで消される）。許されるのは touchend・click・keydown だけ
+    const earlyStart = await page.evaluate(`(() => { ['pointerdown', 'touchstart', 'pointerup'].forEach((name) => document.dispatchEvent(new Event(name, { bubbles: true }))); const state = window.yuruneNightSound.status(); return { started: state.started, contextState: state.contextState }; })()`);
+    check('touching down (pointerdown, touchstart, pointerup) does not start the sound or create the output', earlyStart.started === false && earlyStart.contextState === null, JSON.stringify(earlyStart));
+
     // 利用者が、音を流す を押す（操作のあとだけ、鳴る）
     await page.click('#soundStart');
     check('the sound starts after the tap', await page.waitFor('window.yuruneNightSound.status().started === true && window.yuruneNightSound.status().contextState === "running"', 5000));

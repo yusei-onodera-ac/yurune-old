@@ -130,10 +130,21 @@ const T_DOWN = 'いまはお話しできません。';
   await waitLoad();
   check('night starts in talk mode', (await here()) === '/night' && (await ev(`!!document.getElementById('nightTalk')`)) === true);
   check('there is no text input in the talk screen (voice only)', (await ev(`document.querySelectorAll('input[type=text], input:not([type]), textarea').length`)) === 0);
+  // 実機で声が出ない理由を見るための表示。?debug=1 で出て、?debug=0 で消える。状態の名前だけで、会話の文は入らない
+  await go('/night?debug=1');
+  const traceText = await ev(`(document.querySelector('.calltrace') || {}).textContent || ''`);
+  check('?debug=1 shows the device-state panel (and keeps showing it on the next visit)', /開いた ctx=/.test(traceText), traceText.slice(0, 80));
+  await go('/night');
+  check('the panel stays on the next visit without the flag', (await ev(`!!document.querySelector('.calltrace')`)) === true);
+  await go('/night?debug=0');
+  check('?debug=0 hides the panel again', (await ev(`!!document.querySelector('.calltrace')`)) === false);
   const duckNow = () => ev(`window.yuruneNightSound ? window.yuruneNightSound.status().duck : null`);
   // 0 ボタンを押さなくても、会話の画面を開くと、聞き始める
   check('listening starts by itself when the talk screen opens (no button pressed)', await waitFor(async () => (await ev('window.__recStarts')) >= 1, 3000));
-  check('the hint says it is listening and the mic is shown as on', (await hintText()) === '聞いています…' && (await ev(`document.getElementById('micButton').getAttribute('aria-pressed')`)) === 'true', await hintText());
+  // 端末は、画面を読み込み直すたびに、一度さわるまで、音を鳴らさせない。そのあいだは、さわるよう案内する
+  check('before the first touch, the hint asks the user to touch the screen (the device allows no sound until then) and the mic is shown as on', (await hintText()) === '画面にさわると、音とぽてねの声が出るよ' && (await ev(`document.getElementById('micButton').getAttribute('aria-pressed')`)) === 'true', await hintText());
+  // 本物のさわる操作（CDP の入力）。最初にさわると、音の端末が鳴らせる状態になり、案内は「聞いています…」に戻る
+  const touch = async () => { await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: 200, y: 400, button: 'left', clickCount: 1 }); await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: 200, y: 400, button: 'left', clickCount: 1 }); };
   check('while listening, the ambient sound is lowered (ducked to 0.2) so it does not cover the voice', (await duckNow()) === 0.2, String(await duckNow()));
   await shot('s4_talk_start.png');
   await fake('/reset');
@@ -196,8 +207,6 @@ const T_DOWN = 'いまはお話しできません。';
   check('the hint asks the user to touch the screen (no silent failure)', (await hintText()) === '画面にさわると、ぽてねの声が出るよ', await hintText());
   check('nothing was played while the device blocked it', (await ev('window.__played + window.__spoken + window.__webAudioEnded')) === playedBefore);
   await ev(`window.__blockAudio = false`);
-  // 本物のさわる操作（CDP の入力）を送る
-  const touch = async () => { await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: 200, y: 400, button: 'left', clickCount: 1 }); await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: 200, y: 400, button: 'left', clickCount: 1 }); };
   await touch();
   check('touching the screen plays the held reply', await waitFor(async () => (await ev('window.__played + window.__spoken + window.__webAudioEnded')) > playedBefore, 5000));
   check('after that the hint goes back to listening', await waitFor(async () => (await hintText()) === '聞いています…', 5000), await hintText());
@@ -296,7 +305,7 @@ const T_DOWN = 'いまはお話しできません。';
   st = await fakeState();
   check('after repeated failures the model is not called any more (circuit breaker)', st.llmCalls === callsAtOpen && r.reply === T_DOWN, `${callsAtOpen} -> ${st.llmCalls}`);
   check('the night page still shows the clock and the end control after the outage', (await ev(`!!document.querySelector('.pot')`)) === true);
-  await ev(`document.querySelector('form[action$="/night/mode"] .nightlink').click()`);
+  await ev(`document.querySelector('form[action$="/night/mode"] .hangup').click()`);
   await waitLoad();
   check('the user can return to sound only and the clock runs during the outage', (await ev(`!!document.getElementById('nightClock')`)) === true);
   await ev(`document.querySelector('.endbtn').click()`);

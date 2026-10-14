@@ -15,6 +15,12 @@ public final class SecurityConstants {
     /** 画面（JSP）を作らない静的なファイルの経路。ここでは、セッションもトークンも作らない。 */
     public static final String[] STATIC_PATH_PREFIXES = {"/css/", "/js/", "/images/"};
 
+    /**
+     * 画面の見た目と動きを決めるファイル。指定がないと、端末が、いつ取り直すかを自分で決め、
+     * 公開したあとも、古い版が数時間残って、新しい画面と組み合わさって崩れる。毎回確かめさせる（変わっていなければ 304）。
+     */
+    public static final String[] REVALIDATE_PATH_PREFIXES = {"/css/", "/js/"};
+
     public static final String HEADER_CSP = "Content-Security-Policy";
     public static final String HEADER_CONTENT_TYPE_OPTIONS = "X-Content-Type-Options";
     public static final String HEADER_FRAME_OPTIONS = "X-Frame-Options";

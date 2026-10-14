@@ -45,17 +45,32 @@ public final class WebRequestPolicy {
 
     /**
      * 応答に付ける Cache-Control。利用者ごとに違う画面と API は、端末にも中継にも残させない（no-store）。
-     * 利用者によらず同じ、アプリの入口の固定ファイル（マニフェスト、Service Worker、案内ページ）は、残してよいが、毎回確かめさせる（no-cache）。
-     * css・js・画像は、指定しない。
+     * 利用者によらず同じ、アプリの入口の固定ファイル（マニフェスト、Service Worker、案内ページ）と、css・js は、残してよいが、毎回確かめさせる（no-cache）。
+     * 画像は、指定しない。
      */
     public Optional<String> findCacheControl(String path) {
         if (path != null && PwaConstants.ROOT_FILE_PATHS.contains(path)) {
+            return Optional.of(PwaConstants.CACHE_CONTROL_REVALIDATE);
+        }
+        if (isRevalidatedPath(path)) {
             return Optional.of(PwaConstants.CACHE_CONTROL_REVALIDATE);
         }
         if (isStaticPath(path)) {
             return Optional.empty();
         }
         return Optional.of(SecurityConstants.CACHE_CONTROL_VALUE);
+    }
+
+    private boolean isRevalidatedPath(String path) {
+        if (path == null) {
+            return false;
+        }
+        for (String prefix : SecurityConstants.REVALIDATE_PATH_PREFIXES) {
+            if (path.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** ログインしていなくても開ける経路（ログイン、登録、規約、稼働の確認）と、静的なファイル。 */
